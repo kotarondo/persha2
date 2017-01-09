@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // non-weak votes must have unique value in an even-round
 
 /* error scenario

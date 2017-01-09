@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // must not deliver non-committed agreement vote
 
 /* error scenario

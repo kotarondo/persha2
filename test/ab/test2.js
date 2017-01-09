@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // test flow control
 
 require('./harness')

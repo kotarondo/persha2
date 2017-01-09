@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // infinite loop of MERGE_ROUNDS
 
 /* error scenario

@@ -31,6 +31,8 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+'use strict'
+
 var exit_code = 1
 
 process.on('beforeExit', function() {

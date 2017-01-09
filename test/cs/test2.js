@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // must not change a weak vote to a non-weak vote
 
 /* error scenario

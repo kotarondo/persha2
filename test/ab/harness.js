@@ -31,6 +31,8 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+'use strict'
+
 require('../harness')
 global.AtomicBroadcast = require('../../src/AtomicBroadcast')
 global.PromiseContext = require('PromiseContext')

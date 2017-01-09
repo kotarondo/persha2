@@ -31,6 +31,8 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+'use strict'
+
 require('../harness')
 global.ConsensusState = require('../../src/ConsensusState')
 

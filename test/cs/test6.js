@@ -2,6 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
+'use strict'
+
 // infinite loop under adaptive adversary
 // If you want to avoid this, you should limit copy-vote only on every 4 rounds, for example.
 // But it requires 3 votes to be stored in each node.
@@ -62,7 +64,7 @@ for (var i = 0; i < 1; i++) {
     SET_WRITTEN = 0
     COLLAPSE_ROUNDS = 0
     MERGE_ROUNDS = 0
-    limit = 100
+    var limit = 100
 
     // error scenario
     // limit = Infinity
