@@ -83,7 +83,7 @@ class ConsensusState {
         } else {
             var round = Number(vote.round)
             var weak = Boolean(vote.weak)
-			if (!(this.round <= round)) return
+            if (!(this.round <= round)) return
             updateRound(this, round)
             setVote0(this, vote.value, weak)
         }

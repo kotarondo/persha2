@@ -70,7 +70,7 @@ global.initEnv = function() {
     receivedSeqs = []
     resultValues = []
     for (let i = 0; i < N; i++) {
-		receivedSeqs[i] = -1
+        receivedSeqs[i] = -1
         var config = {
             N: N,
             F: F,
@@ -93,11 +93,11 @@ global.initEnv = function() {
             resultValues[seq].forEach((e, i) => assert_equals(e, value[i]))
             value.forEach(e => valueCounts[e] = ~~valueCounts[e] + 1)
         }
-		abs[i].onSkip = function(to, from) {
-			trace(i + " skip " + from + ":" + to)
+        abs[i].onSkip = function(to, from) {
+            trace(i + " skip " + from + ":" + to)
             assert_equals(++receivedSeqs[i], seq)
-			receivedSeqs[i] = to
-		}
+            receivedSeqs[i] = to
+        }
         if (AUTO_START) abs[i].start()
     }
 }
