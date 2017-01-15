@@ -54,6 +54,7 @@ class AtomicBroadcast {
      */
     constructor(config, ipc, vlog) {
         assert(config.M <= config.N - config.F)
+        assert(config.M * 2 > config.N)
         assert(1 <= config.BUFFER_QUEUE)
         assert(1 <= config.BUFFER_SEQS)
         assert(1 <= config.HISTORY_SEQS)
@@ -129,6 +130,7 @@ class AtomicBroadcast {
      */
     resume() {
         this.paused = false
+        if (this.closed) return
         if (this.active) {
             scheduleOnSkip(this)
             scheduleOnReceive(this)
@@ -141,7 +143,7 @@ class AtomicBroadcast {
     onDrain() {}
 
     /**
-     * callback method: called when messages are arrived (unless this instance is paused)
+     * callback method: called when messages are arrived (unless this instance has been paused)
      * @param {array} value - array of received messages
      * @param {integer} seq - increasing sequence number identifying this callback
      */
@@ -224,6 +226,7 @@ function doCallbackOnDrain(ab) {
     if (!ab.onDrainRequired) return
     if (ab.queue.length >= ab.config.BUFFER_QUEUE) return
     ab.onDrainRequired = false
+    if (!(ab.onDrain instanceof Function)) return
     return ab.onDrain()
 }
 
@@ -248,6 +251,7 @@ function doCallbackOnSkip(ab) {
     ab.updateSent = {}
     sendUpdates(ab)
     scheduleOnReceive(ab)
+    if (!(ab.onSkip instanceof Function)) return
     return ab.onSkip(ab.cbkSeq - 1, from)
 }
 
@@ -276,6 +280,7 @@ function doCallbackOnReceive(ab) {
     sendUpdates(ab)
     scheduleOnReceive(ab)
     assert(value.length > 0)
+    if (!(ab.onReceive instanceof Function)) return
     return ab.onReceive(value, seq)
 }
 
@@ -309,6 +314,7 @@ function sendUpdates(ab) {
 
 function ipcOnConnected(ab, to) {
     assert(ab.active)
+    assert(!ab.closed)
     delete ab.updateSent[to]
     for (var i in ab.states) {
         var cs = ab.states[i]
@@ -320,6 +326,7 @@ function ipcOnConnected(ab, to) {
 
 function ipcOnDrain(ab, to) {
     assert(ab.active)
+    assert(!ab.closed)
     ab.ipcSendable[to] = true
     sendUpdate(ab, to)
     for (var i in ab.states) {
@@ -331,6 +338,7 @@ function ipcOnDrain(ab, to) {
 
 function ipcOnReceive(ab, pkt, from) {
     assert(ab.active)
+    assert(!ab.closed)
     switch (pkt.type) {
         case 'update':
             var oldMinSeq = ab.minSeq
@@ -417,6 +425,7 @@ function handleVote(ab, cs) {
 function vlogOnRead(ab, vote) {
     // recovery
     assert(!ab.active)
+    assert(!ab.closed)
     var cs = getState(ab, vote.seq)
     cs.recovery(vote)
     for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
@@ -427,6 +436,7 @@ function vlogOnRead(ab, vote) {
 
 function vlogOnRecovered(ab, minSeq) {
     assert(!ab.active)
+    assert(!ab.closed)
     for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
         var cs2 = getState(ab, minSeq - 1 + i)
         if (cs2) cs2.setRecovered()

@@ -1,41 +1,12 @@
-/*
- Copyright (c) 2017, Kotaro Endo.
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 
- 2. Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following
-    disclaimer in the documentation and/or other materials provided
-    with the distribution.
- 
- 3. Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived
-    from this software without specific prior written permission.
- 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright (c) 2017, Kotaro Endo.
+// All rights reserved.
+// License: "BSD-3-Clause"
 
 'use strict'
 
 require('../harness')
 global.AtomicBroadcast = require('../../src/AtomicBroadcast')
-global.PromiseContext = require('PromiseContext')
+global.PromiseContext = require('promise_context')
 
 global.N = 3
 global.F = 1
@@ -48,15 +19,28 @@ global.COLLAPSE_ROUNDS = 5
 global.MERGE_ROUNDS = 4
 global.AUTO_START = true
 
-global.ctx = new PromiseContext()
 global.abs = []
 global.ipcs = []
 global.vlogs = []
-global.IPC_schedule = setImmediate
-global.VLog_schedule = setImmediate
 global.valueCounts = {}
-global.receivedSeqs = []
+global.seqCounts = []
 global.resultValues = []
+global.receivedSeqs = []
+global.receivedSeqMax = -1
+
+function makeConfig() {
+    return {
+        N: N,
+        F: F,
+        M: M,
+        BUFFER_QUEUE: BUFFER_QUEUE,
+        BUFFER_SEQS: BUFFER_SEQS,
+        HISTORY_SEQS: HISTORY_SEQS,
+        COLLAPSE_SEQS: COLLAPSE_SEQS,
+        COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
+        MERGE_ROUNDS: MERGE_ROUNDS,
+    }
+}
 
 global.initEnv = function() {
     debug("====================")
@@ -66,46 +50,60 @@ global.initEnv = function() {
     abs = []
     ipcs = []
     vlogs = []
-    valueCounts = {}
-    receivedSeqs = []
+    valueCounts = Object.create(toStringCustomized)
+    seqCounts = []
     resultValues = []
-    for (let i = 0; i < N; i++) {
-        receivedSeqs[i] = -1
-        var config = {
-            N: N,
-            F: F,
-            M: M,
-            BUFFER_QUEUE: BUFFER_QUEUE,
-            BUFFER_SEQS: BUFFER_SEQS,
-            HISTORY_SEQS: HISTORY_SEQS,
-            COLLAPSE_SEQS: COLLAPSE_SEQS,
-            COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
-            MERGE_ROUNDS: MERGE_ROUNDS,
-        }
-        ipcs[i] = new IPC(i)
-        vlogs[i] = new VLog(i)
-        abs[i] = new AtomicBroadcast(config, ipcs[i], vlogs[i])
-        abs[i].onReceive = function(value, seq) {
-            value = value.map(e => e.tag)
-            trace(i + " receive " + seq + ":" + value)
-            assert_equals(++receivedSeqs[i], seq)
-            if (!resultValues[seq]) resultValues[seq] = value
-            resultValues[seq].forEach((e, i) => assert_equals(e, value[i]))
-            value.forEach(e => valueCounts[e] = ~~valueCounts[e] + 1)
-        }
-        abs[i].onSkip = function(to, from) {
-            trace(i + " skip " + from + ":" + to)
-            assert_equals(++receivedSeqs[i], seq)
-            receivedSeqs[i] = to
-        }
-        if (AUTO_START) abs[i].start()
+    receivedSeqs = []
+    receivedSeqMax = -1
+    for (var i = 0; i < N; i++) {
+        restartEnv(i)
     }
+}
+
+global.restartEnv = function(i) {
+    trace('test', i + " restart")
+    if (abs[i]) abs[i].close()
+    receivedSeqs[i] = -1
+    vlogs[i] = new VLog(vlogs[i] || String(i))
+    abs[i] = new AtomicBroadcast(makeConfig(), new IPC(i), vlogs[i])
+    abs[i].onReceive = function(value, seq) {
+        value = value.map(e => e.tag)
+        trace('receive', i + " receive " + seq + ":" + value)
+        assert_equals(++receivedSeqs[i], seq)
+        if (!resultValues[seq]) resultValues[seq] = value
+        resultValues[seq].forEach((e, i) => assert_equals(e, value[i]))
+        value.forEach(e => valueCounts[e] = ~~valueCounts[e] + 1)
+        seqCounts[seq] = ~~seqCounts[seq] + 1
+        receivedSeqMax = Math.max(receivedSeqMax, seq)
+    }
+    abs[i].onSkip = function(to, from) {
+        trace('skip', i + " skip " + from + ":" + to)
+        assert(from <= to && to + HISTORY_SEQS <= receivedSeqMax)
+        assert_equals(++receivedSeqs[i], from)
+        receivedSeqs[i] = to
+    }
+    if (AUTO_START) abs[i].start()
 }
 
 global.closeEnv = function() {
     for (var i = 0; i < N; i++) {
         abs[i].close()
     }
+}
+
+var x = 0
+
+global.initDrainLoop = function(i) {
+    var ab = abs[i]
+    ab.onDrain = function() {
+        while (true) {
+            if (x >= 26) x = 0
+            if (!ab.broadcast({
+                    tag: String.fromCharCode(0x41 + (x++))
+                })) break
+        }
+    }
+    ab.onDrain()
 }
 
 global.IPC = class {
@@ -115,7 +113,7 @@ global.IPC = class {
     }
 
     start() {
-        trace("IPC start " + this.from)
+        trace('ipc', "IPC start " + this.from)
         var from = this.from
         ipcs[from] = this
         var fromIPC = this
@@ -123,20 +121,20 @@ global.IPC = class {
             if (from == to) continue
             let toIPC = ipcs[to]
             if (!toIPC) continue
-            IPC_schedule(function() {
+            internal_schedule(function() {
                 if (ipcs[from] !== fromIPC) return
                 if (ipcs[to] !== toIPC) return
-                trace("IPC connecting " + from + " to " + to)
+                trace('ipc', "IPC connecting " + from + " to " + to)
                 toIPC.connected[from] = fromIPC
                 fromIPC.connected[to] = toIPC
                 toIPC.onConnected(from)
                 fromIPC.onConnected(to)
-            })
+            }, from, to)
         }
     }
 
     close() {
-        trace("IPC close " + this.from)
+        trace('ipc', "IPC close " + this.from)
         ipcs[this.from] = null
         this.connected = {}
     }
@@ -149,17 +147,17 @@ global.IPC = class {
         var toIPC = ipcs[to]
         if (!toIPC || toIPC.connected[from] != fromIPC) return false
         if (ipcs[from] !== fromIPC || fromIPC.connected[to] != toIPC) return false
-        IPC_schedule(function() {
+        internal_schedule(function() {
             if (ipcs[to] !== toIPC || toIPC.connected[from] != fromIPC) return
             if (ipcs[from] !== fromIPC || fromIPC.connected[to] != toIPC) return
             if (pkt.type == 'vote') {
-                trace("send vote " + from + " to " + to + " seq=" + pkt.seq + " r=" + pkt.round)
+                trace('ipc', "send vote " + from + " to " + to + " seq=" + pkt.seq + " r=" + pkt.round)
             }
             if (pkt.type == 'update') {
-                trace("send update " + from + " to " + to + " cbkSeq=" + pkt.cbkSeq)
+                trace('ipc', "send update " + from + " to " + to + " cbkSeq=" + pkt.cbkSeq)
             }
             toIPC.onReceive(pkt, from)
-        })
+        }, from, to)
         return true
     }
 
@@ -170,23 +168,31 @@ global.IPC = class {
 
 global.VLog = class {
     constructor(name) {
+        if (name instanceof VLog) {
+            assert(name.closed)
+            this.name = name.name
+            this.votes = name.votes
+            this.minSeq = name.minSeq
+            return
+        }
+        assert_equals(typeof name, "string")
         this.name = name
         this.votes = []
-        this.closed = true
         this.minSeq = 0
-        this.sessionID = 0
     }
 
     start() {
-        assert(this.closed)
+        assert_equals(this.closed, undefined)
         this.closed = false
-        this.sessionID++;
-        for (var vote of this.votes) {
-            if (vote.seq < this.minSeq) continue
-            trace(this.name + " read vote.seq=" + vote.seq + " vote.round=" + vote.round)
-            this.onRead(vote)
-        }
-        this.onRecovered(this.minSeq)
+        internal_schedule(function() {
+            if (this.closed) return
+            for (var vote of this.votes) {
+                if (vote.seq < this.minSeq) continue
+                trace('vlog', this.name + " read vote.seq=" + vote.seq + " vote.round=" + vote.round)
+                this.onRead(vote)
+            }
+            this.onRecovered(this.minSeq)
+        }.bind(this))
     }
 
     close() {
@@ -196,14 +202,12 @@ global.VLog = class {
 
     write(vote, callback) {
         var vote = obj_copy(vote)
-        var sessionID = this.sessionID
-        var self = this
-        VLog_schedule(function() {
-            if (self.closed || self.sessionID !== sessionID) return
-            self.votes.push(vote)
-            trace(self.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
+        internal_schedule(function() {
+            if (this.closed) return
+            this.votes.push(vote)
+            trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
             callback()
-        })
+        }.bind(this))
     }
 
     updateMinSeq(minSeq) {
@@ -268,6 +272,82 @@ global.dump1 = function(seq) {
     console.log(line)
 }
 
+global.ctx = new PromiseContext()
+
+ctx.setCompletion(test_success, function(err) {
+    console.log(err)
+})
+
+global.waitUntil = function(cond) {
+    var loop = 10000
+    ctx.loop(function() {
+        assert(--loop >= 0, "TIMEOUT in waitUntil()")
+        if (cond()) ctx.break()
+        ctx.sleep(1)
+    })
+}
+
+setImmediate = hooked_setImmediate
+var internal_schedule = hooked_setImmediate
+global.sim_ipc_delay = 0
+global.sim_vlog_delay = 0
+global.sim_node_delays = []
+
+function sim_schedule(func, from, to) {
+    var delay = 0
+    if (from == to) {
+        delay += ~~sim_vlog_delay
+    } else {
+        delay += ~~sim_ipc_delay
+    }
+    delay += ~~sim_node_delays[from]
+    delay += ~~sim_node_delays[to]
+    delay = Math.floor(delay * (1 + Math.random() * 0.3))
+    sim_setTimeout(func, delay)
+}
+
+global.setSimTests = function(onoff, ipc_delay, vlog_delay, node_delays) {
+    ctx.call(function() {
+        if (!onoff) {
+            setImmediate = hooked_setImmediate
+            internal_schedule = hooked_setImmediate
+        } else {
+            setImmediate = sim_setImmediate
+            internal_schedule = sim_schedule
+            sim_ipc_delay = ipc_delay
+            sim_vlog_delay = vlog_delay
+            sim_node_delays = node_delays || []
+        }
+    })
+}
+
+global.simTests = function(test) {
+    ctx.call(function() {
+        setSimTests(false)
+        test()
+        setSimTests(true, 100, 10, [])
+        test()
+        setSimTests(true, 10, 100, [])
+        test()
+        setSimTests(true, 10, 10, [10, 20, 30, 70, 30, 20, 10])
+        test()
+    })
+}
+
+global.nodeTests = function(test) {
+    for (let n = 3; n < 8; n++) {
+        for (let f = 1; f * 2 < n; f++) {
+            if (n > 5 && (f + 1) * 2 < n) continue
+            ctx.call(function() {
+                N = n
+                F = f
+                M = N - F
+                test()
+            })
+        }
+    }
+}
+
 global.envTests = function(test, loop) {
     ctx.loop(function() {
         if (--loop < 0) ctx.break()
@@ -281,5 +361,6 @@ global.envTests = function(test, loop) {
         ctx.call(test)
         ctx.call(dump)
         ctx.call(closeEnv)
+        waitUntil(() => (setImmediatesAreScheduled === 0))
     })
 }

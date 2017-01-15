@@ -11,29 +11,31 @@ require('./harness')
 N = 3
 F = 1
 M = 2
-
 AUTO_START = false
 
 function test() {
     for (var i = 0; i < N; i++) {
-        abs[i].broadcast({
+        var ab = abs[i]
+        ab.broadcast({
             tag: String.fromCharCode(0x41 + i)
         })
-        abs[i].start()
+        assert_equals(ab.vlog.closed, undefined)
+        ab.start()
     }
-    var loop = 1000
-    ctx.loop(function() {
-        assert(--loop >= 0)
-        var fin = 0
+    waitUntil(() => (setImmediatesAreScheduled === 0))
+    ctx.call(function() {
         for (var v in valueCounts) {
-            if (valueCounts[v] === N) fin++;
+            assert_equals(valueCounts[v], N)
         }
-        if (fin === N) ctx.break()
-        ctx.sleep(1)
+        seqCounts.forEach(e => assert_equals(e, N))
     })
 }
 
+// trace_flag.push('receive')
 // debug_flag = true
-envTests(test, 100)
 
-ctx.call(test_success)
+simTests(function() {
+    envTests(test, 100)
+})
+
+ctx.end()

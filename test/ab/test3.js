@@ -4,7 +4,7 @@
 
 'use strict'
 
-// test duplicate messages
+// duplicate messages
 
 require('./harness')
 
@@ -22,30 +22,34 @@ function broadcast(x) {
 
 function test1() {
     broadcast(0)
-    broadcast(0)
-    ctx.sleep(30)
+    waitUntil(() => (setImmediatesAreScheduled === 0))
     ctx.call(function() {
         assert_equals(valueCounts.A, N, valueCounts)
     })
 }
 
 function test2() {
-    var x = 0
-    var loop = 1000
+    var c = 0
     ctx.loop(function() {
-        assert(--loop >= 0)
-        if (~~valueCounts.A === N * x) {
+        c++;
+        for (var i = 0; i < c; i++) {
             broadcast(0)
-            broadcast(0)
-            x++;
-            if (x >= 20) ctx.break()
         }
-        ctx.sleep(1)
+        waitUntil(() => valueCounts.A === N * c)
+        if (c >= 20) ctx.break()
+    })
+    waitUntil(() => (setImmediatesAreScheduled === 0))
+    ctx.call(function() {
+        assert_equals(valueCounts.A, N * c, valueCounts)
     })
 }
 
+// trace_flag.push('receive')
 // debug_flag = true
-envTests(test1, 10)
-envTests(test2, 10)
 
-ctx.call(test_success)
+simTests(function() {
+    envTests(test1, 30)
+    envTests(test2, 30)
+})
+
+ctx.end()

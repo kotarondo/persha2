@@ -1,35 +1,6 @@
-/*
- Copyright (c) 2017, Kotaro Endo.
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
- 
- 2. Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following
-    disclaimer in the documentation and/or other materials provided
-    with the distribution.
- 
- 3. Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived
-    from this software without specific prior written permission.
- 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright (c) 2017, Kotaro Endo.
+// All rights reserved.
+// License: "BSD-3-Clause"
 
 'use strict'
 
@@ -56,49 +27,20 @@ global.assert = function(expr, msg) {
 }
 
 global.assert_equals = function(act, exp) {
-    assert(act == exp, act + " expected: " + exp)
+    assert(act === exp, "actual: " + act + " expected: " + exp)
 }
 
 global.debug_flag = false
-global.trace_flag = false
+global.trace_flag = []
 
 global.debug = function() {
     if (!debug_flag) return
     console.log.apply(console, arguments)
 }
 
-global.trace = function() {
-    if (!trace_flag) return
-    console.log.apply(console, arguments)
-}
-
-global.perf_name = ""
-global.perf_loops = 1
-var startTime = Date.now()
-
-global.start_perf = function() {
-    startTime = Date.now()
-}
-
-global.end_perf = function() {
-    var endTime = Date.now()
-    var elapsed = endTime - startTime
-    var val = elapsed / (perf_loops * 1000)
-    var unit = " sec"
-    if (val < 1) {
-        val *= 1000
-        unit = " msec"
-        if (val < 1) {
-            val *= 1000
-            unit = " usec"
-            if (val < 1) {
-                val *= 1000
-                unit = " nsec"
-            }
-        }
-    }
-    val = val.toPrecision(3)
-    console.log("perf result: " + perf_name + "=" + val + unit)
+global.trace = function(f) {
+    if (trace_flag.indexOf('all') < 0 && trace_flag.indexOf(f) < 0) return
+    console.log.apply(console, Array.prototype.slice.call(arguments, 1))
 }
 
 global.obj_copy = function(obj) {
@@ -130,4 +72,84 @@ global.shuffle = function(array) {
         array[y] = array[x]
         array[x] = f
     }
+}
+
+global.setImmediatesAreScheduled = 0
+var orig_setImmediate = setImmediate
+
+global.hooked_setImmediate = function(func) {
+    var args = Array.prototype.slice.call(arguments, 1)
+    setImmediatesAreScheduled++;
+    orig_setImmediate(function() {
+        setImmediatesAreScheduled--;
+        func.apply(null, args)
+    })
+}
+
+var sim_scheduled = false
+var sim_queue = []
+
+global.sim_setTimeout = function(func, delay) {
+    assert_equals(arguments.length, 2)
+    var list = sim_queue[delay]
+    if (!list) {
+        var list = sim_queue[delay] = []
+    }
+    list.push(func)
+    if (!sim_scheduled) {
+        hooked_setImmediate(sim_purge)
+        sim_scheduled = true
+    }
+}
+
+global.sim_setImmediate = function(func) {
+    var args = Array.prototype.slice.call(arguments)
+    args[0] = null
+    var f = Function.prototype.bind.apply(func, args)
+    sim_setTimeout(f, 0)
+}
+
+function sim_purge() {
+    assert(sim_scheduled)
+    var c = randomInt(10)
+    while (c--) {
+        if (!sim_purge1()) {
+            sim_scheduled = false
+            return
+        }
+    }
+    hooked_setImmediate(sim_purge)
+}
+
+function sim_purge1() {
+    for (var i = 0; i < sim_queue.length; i++) {
+        var list = sim_queue[i]
+        if (list && list.length) {
+            if (i > 0) {
+                trace('clock', "clock +" + i)
+                sim_queue = sim_queue.slice(i)
+            }
+            var func = list.shift()
+            func()
+            return true
+        }
+    }
+    return false
+}
+
+global.toStringCustomized = {}
+
+Object.defineProperty(toStringCustomized, "toString", {
+    "value": toStringObject,
+    "writable": true,
+    "enumerable": false,
+    "configurable": true,
+})
+
+function toStringObject() {
+    var s = "{"
+    for (var v in this) {
+        s += v + ":" + this[v] + ", "
+    }
+    return s + "}"
 }

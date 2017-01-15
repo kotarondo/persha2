@@ -1,6 +1,6 @@
 {
   "name": "persha2",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Persistent and Highly Available JavaScript Engine",
   "author": "Kotaro Endo <kotarondo@gmail.com>",
   "license": "BSD-3-Clause",
@@ -21,7 +21,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "PromiseContext": ">=0.1"
+    "promise_context": ">=0.1"
   },
   "scripts": {
     "test": "./test/run-tests.sh"
