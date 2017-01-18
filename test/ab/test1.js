@@ -32,7 +32,7 @@ function test() {
     })
 }
 
-// trace_flag.push('receive')
+// trace_flag.push('all')
 // debug_flag = true
 
 simTests(function() {

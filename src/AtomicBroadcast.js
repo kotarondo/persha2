@@ -76,7 +76,6 @@ class AtomicBroadcast {
         this.activeSent = {}
         this.active = false
         this.closed = false
-        this.iniDone = false
         ipc.onConnected = ipcOnConnected.bind(null, this)
         ipc.onDrain = ipcOnDrain.bind(null, this)
         ipc.onReceive = ipcOnReceive.bind(null, this)
@@ -428,9 +427,26 @@ function handleVote(ab, cs) {
         if (cs.seq === ab.cbkSeq) scheduleOnReceive(ab)
     }
     sendVotes(ab, cs)
+    writeVote(ab, cs)
+}
+
+function writeVote(ab, cs) {
     var vote = cs.popVoteToWrite()
     if (!vote) return
+    if (!ab.vlog.isWritable()) {
+        ab.writeVotePending = true
+        cs.cancelVoteToWrite(vote)
+        return
+    }
     ab.vlog.write(vote)
+}
+
+function writeVoteAll(ab) {
+    for (var i in ab.states) {
+        var cs = ab.states[i]
+        if (cs.seq < ab.minSeq) continue
+        writeVote(ab, cs)
+    }
 }
 
 function vlogOnVoteWritten(ab, vote) {
@@ -442,6 +458,10 @@ function vlogOnVoteWritten(ab, vote) {
     var cs = getState(ab, seq)
     if (cs && cs.voteWritten(vote)) {
         handleVote(ab, cs)
+    }
+    if (ab.writeVotePending && ab.vlog.isWritable()) {
+        ab.writeVotePending = false
+        writeVoteAll(ab)
     }
 }
 

@@ -133,6 +133,14 @@ class ConsensusState {
     }
 
     /**
+     * notify that previously pop-ed vote is not written
+     */
+    cancelVoteToWrite(vote) {
+        if (this.writing !== vote) return
+        this.writing = null
+    }
+
+    /**
      * notify that a previously pop-ed vote is written
      * @param {object} vote - vote
      * @return {boolean} - internal own state is changed or not 

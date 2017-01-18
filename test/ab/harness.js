@@ -175,6 +175,7 @@ global.VLog = class {
             this.name = name.name
             this.votes = name.votes
             this.minSeq = name.minSeq
+            this.writing = 0
             return
         }
         assert_equals(typeof name, "string")
@@ -214,9 +215,15 @@ global.VLog = class {
         this.closed = true
     }
 
+    isWritable() {
+        return !this.writing
+    }
+
     write(vote, callback) {
         var name = this.name
+        this.writing++;
         internal_schedule(function() {
+            this.writing--;
             if (this.closed) return
             this.votes.push(vote)
             trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
