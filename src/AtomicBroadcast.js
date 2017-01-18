@@ -80,6 +80,7 @@ class AtomicBroadcast {
         ipc.onConnected = ipcOnConnected.bind(null, this)
         ipc.onDrain = ipcOnDrain.bind(null, this)
         ipc.onReceive = ipcOnReceive.bind(null, this)
+        vlog.onVoteWritten = vlogOnVoteWritten.bind(null, this)
         vlog.onStart = vlogOnStart.bind(null, this)
         vlog.onRead = vlogOnRead.bind(null, this)
         vlog.onRecovered = vlogOnRecovered.bind(null, this)
@@ -428,16 +429,19 @@ function handleVote(ab, cs) {
     }
     sendVotes(ab, cs)
     var vote = cs.popVoteToWrite()
-    if (vote) {
-        ab.vlog.write(vote, function() {
-            for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
-                var cs2 = getState(ab, cs.seq + i)
-                if (cs2) cs2.setWritten()
-            }
-            if (cs.voteWritten(vote)) {
-                handleVote(ab, cs)
-            }
-        })
+    if (!vote) return
+    ab.vlog.write(vote)
+}
+
+function vlogOnVoteWritten(ab, vote) {
+    var seq = vote.seq
+    for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
+        var cs2 = getState(ab, seq + i)
+        if (cs2) cs2.setWritten()
+    }
+    var cs = getState(ab, seq)
+    if (cs && cs.voteWritten(vote)) {
+        handleVote(ab, cs)
     }
 }
 

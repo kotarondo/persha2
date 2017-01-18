@@ -163,7 +163,7 @@ class ConsensusState {
      */
     resetVoteToSend(to) {
         if (!this.sendable) return
-        delete this.sent[to]
+        this.sent[to] = false
     }
 
     /**

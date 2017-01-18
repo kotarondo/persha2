@@ -142,7 +142,6 @@ global.IPC = class {
     send(pkt, to) {
         var from = this.from
         assert(from != to)
-        var pkt = obj_copy(pkt)
         var fromIPC = this
         var toIPC = ipcs[to]
         if (!toIPC || toIPC.connected[from] != fromIPC) return false
@@ -221,8 +220,8 @@ global.VLog = class {
             if (this.closed) return
             this.votes.push(vote)
             trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
-            callback()
-        }.bind(this),name,name)
+            this.onVoteWritten(vote)
+        }.bind(this), name, name)
     }
 
     updateMinSeq(minSeq) {
@@ -323,7 +322,7 @@ function sim_schedule(func, from, to) {
     sim_setTimeout(func, delay)
 }
 
-global.setSimTests = function(onoff, ipc_delay, vlog_delay, node_delays) {
+global.setSimTests = function(onoff, ipc_delays, vlog_delays, node_delays) {
     ctx.call(function() {
         if (!onoff) {
             setImmediate = hooked_setImmediate
