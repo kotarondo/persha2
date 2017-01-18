@@ -11,7 +11,7 @@ global.PromiseContext = require('promise_context')
 global.N = 3
 global.F = 1
 global.M = 2
-global.BUFFER_QUEUE = 5
+global.BUFFER_QUEUE = 1
 global.BUFFER_SEQS = 5
 global.HISTORY_SEQS = 10
 global.COLLAPSE_SEQS = 1
@@ -71,7 +71,7 @@ global.restartEnv = function(i) {
         trace('receive', i + " receive " + seq + ":" + value)
         assert_equals(++receivedSeqs[i], seq)
         if (!resultValues[seq]) resultValues[seq] = value
-        resultValues[seq].forEach((e, i) => assert_equals(e, value[i]))
+        resultValues[seq].forEach((e, i) => assert_equals(value[i], e))
         value.forEach(e => valueCounts[e] = ~~valueCounts[e] + 1)
         seqCounts[seq] = ~~seqCounts[seq] + 1
         receivedSeqMax = Math.max(receivedSeqMax, seq)
@@ -151,10 +151,13 @@ global.IPC = class {
             if (ipcs[to] !== toIPC || toIPC.connected[from] != fromIPC) return
             if (ipcs[from] !== fromIPC || fromIPC.connected[to] != toIPC) return
             if (pkt.type == 'vote') {
-                trace('ipc', "send vote " + from + " to " + to + " seq=" + pkt.seq + " r=" + pkt.round)
-            }
-            if (pkt.type == 'update') {
-                trace('ipc', "send update " + from + " to " + to + " cbkSeq=" + pkt.cbkSeq)
+                trace('ipc', "send vote " + from + " to " + to + " seq=" + pkt.seq + " r=" + pkt.round +
+                    " weak=" + pkt.weak + " value=" + pkt.value.map(e => e.tag))
+            } else if (pkt.type == 'update') {
+                trace('ipc', "send update " + from + " to " + to +
+                    " cbkSeq=" + pkt.cbkSeq + " minSeq=" + pkt.minSeq + " maxSeq=" + pkt.maxSeq)
+            } else if (pkt.type == 'active') {
+                trace('ipc', "send active " + from + " to " + to)
             }
             toIPC.onReceive(pkt, from)
         }, from, to)
@@ -184,15 +187,27 @@ global.VLog = class {
     start() {
         assert_equals(this.closed, undefined)
         this.closed = false
-        internal_schedule(function() {
+        var name = this.name
+        var loop
+        var i = -1
+        internal_schedule(loop = function() {
             if (this.closed) return
-            for (var vote of this.votes) {
+            if (i < 0) {
+                i++;
+                trace('vlog', this.name + " vlog start minSeq=" + this.minSeq)
+                internal_schedule(loop, name, name)
+                return this.onStart(this.minSeq)
+            }
+            while (i < this.votes.length) {
+                var vote = this.votes[i++]
                 if (vote.seq < this.minSeq) continue
                 trace('vlog', this.name + " read vote.seq=" + vote.seq + " vote.round=" + vote.round)
-                this.onRead(vote)
+                internal_schedule(loop, name, name)
+                return this.onRead(vote)
             }
-            this.onRecovered(this.minSeq)
-        }.bind(this))
+            trace('vlog', this.name + " vlog recovered")
+            return this.onRecovered()
+        }.bind(this), name, name)
     }
 
     close() {
@@ -201,13 +216,13 @@ global.VLog = class {
     }
 
     write(vote, callback) {
-        var vote = obj_copy(vote)
+        var name = this.name
         internal_schedule(function() {
             if (this.closed) return
             this.votes.push(vote)
             trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
             callback()
-        }.bind(this))
+        }.bind(this),name,name)
     }
 
     updateMinSeq(minSeq) {
@@ -289,19 +304,21 @@ global.waitUntil = function(cond) {
 
 setImmediate = hooked_setImmediate
 var internal_schedule = hooked_setImmediate
-global.sim_ipc_delay = 0
-global.sim_vlog_delay = 0
+global.sim_ipc_delays = []
+global.sim_vlog_delays = []
 global.sim_node_delays = []
 
 function sim_schedule(func, from, to) {
     var delay = 0
     if (from == to) {
-        delay += ~~sim_vlog_delay
+        delay += ~~sim_vlog_delays[from]
+        delay += ~~sim_node_delays[from]
     } else {
-        delay += ~~sim_ipc_delay
+        delay += ~~sim_ipc_delays[from]
+        delay += ~~sim_ipc_delays[to]
+        delay += ~~sim_node_delays[from]
+        delay += ~~sim_node_delays[to]
     }
-    delay += ~~sim_node_delays[from]
-    delay += ~~sim_node_delays[to]
     delay = Math.floor(delay * (1 + Math.random() * 0.3))
     sim_setTimeout(func, delay)
 }
@@ -314,8 +331,8 @@ global.setSimTests = function(onoff, ipc_delay, vlog_delay, node_delays) {
         } else {
             setImmediate = sim_setImmediate
             internal_schedule = sim_schedule
-            sim_ipc_delay = ipc_delay
-            sim_vlog_delay = vlog_delay
+            sim_ipc_delays = ipc_delays || []
+            sim_vlog_delays = vlog_delays || []
             sim_node_delays = node_delays || []
         }
     })
@@ -325,11 +342,11 @@ global.simTests = function(test) {
     ctx.call(function() {
         setSimTests(false)
         test()
-        setSimTests(true, 100, 10, [])
+        setSimTests(true, [50, 50, 50, 50, 50, 50, 50], [5, 5, 5, 5, 5, 5, 5], [])
         test()
-        setSimTests(true, 10, 100, [])
+        setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [50, 50, 50, 50, 50, 50, 50], [])
         test()
-        setSimTests(true, 10, 10, [10, 20, 30, 70, 30, 20, 10])
+        setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [5, 5, 5, 5, 5, 5, 5], [10, 20, 30, 70, 30, 20, 10])
         test()
     })
 }
@@ -357,10 +374,14 @@ global.envTests = function(test, loop) {
         COLLAPSE_SEQS = randomInt(2)
         COLLAPSE_ROUNDS = randomInt(5)
         MERGE_ROUNDS = randomInt(4)
-        ctx.call(initEnv)
-        ctx.call(test)
-        ctx.call(dump)
-        ctx.call(closeEnv)
-        waitUntil(() => (setImmediatesAreScheduled === 0))
+        fixedEnvTest(test)
     })
+}
+
+global.fixedEnvTest = function(test) {
+    ctx.call(initEnv)
+    ctx.call(test)
+    ctx.call(dump)
+    ctx.call(closeEnv)
+    waitUntil(() => (setImmediatesAreScheduled === 0))
 }

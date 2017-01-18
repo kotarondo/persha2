@@ -24,7 +24,8 @@ function test() {
     }
     waitUntil(() => (setImmediatesAreScheduled === 0))
     ctx.call(function() {
-        for (var v in valueCounts) {
+        for (var i = 0; i < N; i++) {
+            var v = String.fromCharCode(0x41 + i)
             assert_equals(valueCounts[v], N)
         }
         seqCounts.forEach(e => assert_equals(e, N))
