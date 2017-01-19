@@ -4,6 +4,8 @@
 
 'use strict'
 
+require('../prof/profiler_util.js')
+
 var exit_code = 1
 
 process.on('beforeExit', function() {
