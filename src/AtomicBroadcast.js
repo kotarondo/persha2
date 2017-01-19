@@ -73,7 +73,6 @@ class AtomicBroadcast {
         this.cbkReceived = {}
         this.ipcSendable = {}
         this.activeReceived = {}
-        this.activeSent = {}
         this.active = false
         this.closed = false
         ipc.onConnected = ipcOnConnected.bind(null, this)
@@ -226,7 +225,6 @@ function doCallbackOnDrain(ab) {
     if (!ab.onDrainRequired) return
     if (ab.queue.length >= ab.config.BUFFER_QUEUE) return
     ab.onDrainRequired = false
-    if (!(ab.onDrain instanceof Function)) return
     return ab.onDrain()
 }
 
@@ -248,10 +246,8 @@ function doCallbackOnSkip(ab) {
     var fromSeq = ab.cbkSeq
     ab.cbkSeq = ab.minSeq
     calcSeqs(ab)
-    ab.updateSent = {}
     sendUpdates(ab)
     scheduleOnReceive(ab)
-    if (!(ab.onSkip instanceof Function)) return
     return ab.onSkip(ab.cbkSeq - 1, fromSeq)
 }
 
@@ -276,11 +272,9 @@ function doCallbackOnReceive(ab) {
     if (!value) return
     ab.cbkSeq++;
     calcSeqs(ab)
-    ab.updateSent = {}
     sendUpdates(ab)
     scheduleOnReceive(ab)
     assert(value.length > 0)
-    if (!(ab.onReceive instanceof Function)) return
     return ab.onReceive(value, seq)
 }
 
@@ -290,12 +284,6 @@ function sendVote(ab, cs, to) {
     var vote = cs.popVoteToSend(to)
     if (!vote) return
     ab.ipcSendable[to] = ab.ipc.send(vote, to)
-}
-
-function sendVotes(ab, cs) {
-    for (var to in ab.ipcSendable) {
-        sendVote(ab, cs, to)
-    }
 }
 
 function sendUpdate(ab, to) {
@@ -311,6 +299,7 @@ function sendUpdate(ab, to) {
 }
 
 function sendUpdates(ab) {
+    ab.updateSent = {}
     for (var to in ab.ipcSendable) {
         sendUpdate(ab, to)
     }
@@ -318,23 +307,14 @@ function sendUpdates(ab) {
 
 function sendActive(ab, to) {
     if (!ab.active) return
-    if (ab.activeSent[to]) return
-    ab.activeSent[to] = true
     ab.ipc.send({
         type: 'active',
     }, to)
 }
 
-function sendActives(ab) {
-    for (var to in ab.ipcSendable) {
-        sendActive(ab, to)
-    }
-}
-
 function ipcOnConnected(ab, to) {
     assert(!ab.closed)
     ab.updateSent[to] = false
-    ab.activeSent[to] = false
     ab.activeReceived[to] = false
     for (var i in ab.states) {
         var cs = ab.states[i]
@@ -349,6 +329,7 @@ function ipcOnDrain(ab, to) {
     assert(!ab.closed)
     ab.ipcSendable[to] = true
     sendUpdate(ab, to)
+    if (!ab.active || !ab.activeReceived[to]) return
     for (var i in ab.states) {
         var cs = ab.states[i]
         if (cs.seq < ab.minSeq) continue
@@ -359,9 +340,13 @@ function ipcOnDrain(ab, to) {
 function ipcOnReceive(ab, pkt, from) {
     assert(!ab.closed)
     switch (pkt.type) {
-        case 'active':
-            ab.activeReceived[from] = true
-            ipcOnDrain(ab, from)
+        case 'vote':
+            assert(ab.active)
+            if (pkt.seq < ab.minSeq) return
+            var cs = getState(ab, pkt.seq)
+            if (cs.receiveFrom(pkt, from)) {
+                handleVote(ab, cs)
+            }
             break
         case 'update':
             var oldMinSeq = ab.minSeq
@@ -373,16 +358,13 @@ function ipcOnReceive(ab, pkt, from) {
                 calcSeqs(ab)
             }
             if (!(oldMinSeq === ab.minSeq && oldMaxSeq === ab.maxSeq)) {
-                ab.updateSent = {}
                 sendUpdates(ab)
             }
             break
-        case 'vote':
-            assert(ab.active)
-            if (pkt.seq < ab.minSeq) return
-            var cs = getState(ab, pkt.seq)
-            if (cs.receiveFrom(pkt, from)) {
-                handleVote(ab, cs)
+        case 'active':
+            ab.activeReceived[from] = true
+            if (ab.ipcSendable[from]) {
+                ipcOnDrain(ab, from)
             }
             break
     }
@@ -426,7 +408,9 @@ function handleVote(ab, cs) {
         if (cs.seq === ab.iniSeq) updateIniSeq(ab)
         if (cs.seq === ab.cbkSeq) scheduleOnReceive(ab)
     }
-    sendVotes(ab, cs)
+    for (var to in ab.ipcSendable) {
+        sendVote(ab, cs, to)
+    }
     writeVote(ab, cs)
 }
 
@@ -492,7 +476,9 @@ function vlogOnRecovered(ab) {
     assert(!ab.active)
     assert(!ab.closed)
     ab.active = true
-    sendActives(ab)
+    for (var to in ab.ipcSendable) {
+        sendActive(ab, to)
+    }
     for (var i in ab.states) {
         var cs = ab.states[i]
         if (cs.seq < ab.minSeq) continue

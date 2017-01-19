@@ -93,7 +93,7 @@ class ConsensusState {
     /**
      * input initial candidate texts of this consensus
      * @param {array} value - array of initial candidate objects
-     * @return {boolean} - internal own state is changed or not 
+     * @return {boolean} - internal own state is changed or not
      */
     init(value) {
         assert(value instanceof Array)
@@ -143,7 +143,7 @@ class ConsensusState {
     /**
      * notify that a previously pop-ed vote is written
      * @param {object} vote - vote
-     * @return {boolean} - internal own state is changed or not 
+     * @return {boolean} - internal own state is changed or not
      */
     voteWritten(vote) {
         updateWritten(this, vote.round)
@@ -178,7 +178,7 @@ class ConsensusState {
      * receive a vote from other node
      * @param {object} vote - vote
      * @param {string} from - other node name
-     * @return {boolean} - internal own state is changed or not 
+     * @return {boolean} - internal own state is changed or not
      */
     receiveFrom(vote, from) {
         from = String(from)

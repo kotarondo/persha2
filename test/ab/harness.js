@@ -219,7 +219,7 @@ global.VLog = class {
         return !this.writing
     }
 
-    write(vote, callback) {
+    write(vote) {
         var name = this.name
         this.writing++;
         internal_schedule(function() {
