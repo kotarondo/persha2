@@ -184,8 +184,10 @@ global.VLog = class {
         this.minSeq = 0
     }
 
-    start() {
+    start(config) {
         assert_equals(this.closed, undefined)
+        var oldConfig = this.config || config
+        this.config = config
         this.closed = false
         var name = this.name
         var loop
@@ -196,7 +198,7 @@ global.VLog = class {
                 i++;
                 trace('vlog', this.name + " vlog start minSeq=" + this.minSeq)
                 internal_schedule(loop, name, name)
-                return this.onStart(this.minSeq)
+                return this.onStart(this.minSeq, oldConfig)
             }
             while (i < this.votes.length) {
                 var vote = this.votes[i++]

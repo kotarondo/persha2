@@ -25,6 +25,7 @@ global.initEnv = function() {
         var config = {
             N: N,
             F: F,
+            OLD_COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
             COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
             MERGE_ROUNDS: MERGE_ROUNDS,
         }
@@ -38,6 +39,7 @@ global.restartEnv = function(i) {
     var config = {
         N: N,
         F: F,
+        OLD_COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
         COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
         MERGE_ROUNDS: MERGE_ROUNDS,
     }

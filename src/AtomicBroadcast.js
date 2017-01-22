@@ -89,7 +89,7 @@ class AtomicBroadcast {
      */
     start() {
         if (this.closed) return
-        this.vlog.start()
+        this.vlog.start(this.config)
         this.ipc.start()
     }
 
@@ -449,12 +449,16 @@ function vlogOnVoteWritten(ab, vote) {
     }
 }
 
-function vlogOnStart(ab, minSeq) {
+function vlogOnStart(ab, minSeq, oldConfig) {
     assert(!ab.active)
     assert(!ab.closed)
+    assert(ab.config.N === oldConfig.N)
+    assert(ab.config.F === oldConfig.F)
+    ab.config.OLD_COLLAPSE_ROUNDS = oldConfig.COLLAPSE_ROUNDS
+    ab.config.OLD_COLLAPSE_SEQS = oldConfig.COLLAPSE_SEQS
     if (minSeq === 0) return
     updateMinSeq(ab, minSeq)
-    for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
+    for (var i = 1; i <= ab.config.OLD_COLLAPSE_SEQS; i++) {
         var cs2 = getState(ab, minSeq - 1 + i)
         if (cs2) cs2.setRecovered()
     }
@@ -466,7 +470,7 @@ function vlogOnRead(ab, vote) {
     assert(!ab.closed)
     var cs = getState(ab, vote.seq)
     if (cs) cs.recovery(vote)
-    for (var i = 1; i <= ab.config.COLLAPSE_SEQS; i++) {
+    for (var i = 1; i <= ab.config.OLD_COLLAPSE_SEQS; i++) {
         var cs2 = getState(ab, cs.seq + i)
         if (cs2) cs2.setRecovered()
     }
