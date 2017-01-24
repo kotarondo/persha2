@@ -170,12 +170,13 @@ global.IPC = class {
 
 global.VLog = class {
     constructor(name) {
+        this.writing = 0
         if (name instanceof VLog) {
             assert(name.closed)
             this.name = name.name
             this.votes = name.votes
             this.minSeq = name.minSeq
-            this.writing = 0
+            this.config = name.config
             return
         }
         assert_equals(typeof name, "string")
