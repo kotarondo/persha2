@@ -4,7 +4,7 @@
 
 'use strict'
 
-// changing COLLAPSE_SEQS
+// changing COLLAPSE_ROUNDS
 
 require('./harness')
 
@@ -36,7 +36,7 @@ function test() {
     ctx.call(function() {
         x = 0
         for (var i = 0; i < N; i++) {
-            COLLAPSE_SEQS = 0
+            COLLAPSE_ROUNDS = 0
             restartEnv(i)
         }
     })
