@@ -1,0 +1,44 @@
+// Copyright (c) 2017, Kotaro Endo.
+// All rights reserved.
+// License: "BSD-3-Clause"
+
+'use strict'
+
+console.log("performance at 3 nodes, serial, 1 threads")
+
+require('./harness')
+
+N = 3
+F = 1
+M = 2
+BUFFER_QUEUE = 4
+BUFFER_SEQS = 10
+HISTORY_SEQS = 20
+COLLAPSE_SEQS = 1
+COLLAPSE_ROUNDS = 10
+MERGE_ROUNDS = 10
+
+function test() {
+    initSerialLoop(0)
+    waitUntil(() => seqCounts[100] === N)
+    ctx.call(function() {
+        var sent = Math.floor(totalValueCounts() / N)
+        console.log(" ipc_delay=" + 2 * sim_ipc_delays[0] + "ms" +
+            " vlog_delay=" + sim_vlog_delays[0] + "ms" +
+            " time=" + sim_clock + "ms" +
+            " sent=" + sent +
+            " avg=" + Math.floor(sim_clock / sent) + "ms")
+    })
+}
+
+// trace_flag.push('all')
+// debug_flag = true
+
+setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [5, 5, 5, 5, 5, 5, 5], [])
+fixedEnvTest(test)
+setSimTests(true, [50, 50, 50, 50, 50, 50, 50], [5, 5, 5, 5, 5, 5, 5], [])
+fixedEnvTest(test)
+setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [50, 50, 50, 50, 50, 50, 50], [])
+fixedEnvTest(test)
+
+ctx.end()

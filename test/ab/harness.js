@@ -106,6 +106,31 @@ global.initDrainLoop = function(i) {
     ab.onDrain()
 }
 
+global.initSerialLoop = function(i) {
+    var ab = abs[i]
+    var oldOnReceive = ab.onReceive
+    ab.onReceive = function(value, seq) {
+        oldOnReceive(value, seq)
+        doRequest()
+    }
+
+    function doRequest() {
+        if (x >= 26) x = 0
+        ab.broadcast({
+            tag: String.fromCharCode(0x41 + (x++))
+        })
+    }
+    doRequest()
+}
+
+global.totalValueCounts = function() {
+    var c = 0
+    for (var v in valueCounts) {
+        c += valueCounts[v]
+    }
+    return c
+}
+
 global.IPC = class {
     constructor(from) {
         this.from = from
@@ -154,9 +179,12 @@ global.IPC = class {
                     " weak=" + pkt.weak + " value=" + pkt.value.map(e => e.tag))
             } else if (pkt.type == 'update') {
                 trace('ipc', "send update " + from + " to " + to +
-                    " cbkSeq=" + pkt.cbkSeq + " minSeq=" + pkt.minSeq + " maxSeq=" + pkt.maxSeq)
+                    " cbkSeq=" + pkt.cbkSeq + " minSeq=" + pkt.minSeq +
+                    " maxSeq=" + pkt.maxSeq + " limReq=" + pkt.limReq)
             } else if (pkt.type == 'active') {
                 trace('ipc', "send active " + from + " to " + to)
+            } else if (pkt.type == 'limit') {
+                trace('ipc', "send limit " + from + " to " + to + " seq=" + pkt.seq)
             }
             toIPC.onReceive(pkt, from)
         }, from, to)
@@ -171,11 +199,13 @@ global.IPC = class {
 global.VLog = class {
     constructor(name) {
         this.writing = 0
+        this.lazyLimSeq = {}
         if (name instanceof VLog) {
             assert(name.closed)
             this.name = name.name
             this.votes = name.votes
             this.minSeq = name.minSeq
+            this.storedLimSeq = name.storedLimSeq
             this.config = name.config
             return
         }
@@ -183,6 +213,7 @@ global.VLog = class {
         this.name = name
         this.votes = []
         this.minSeq = 0
+        this.storedLimSeq = {}
     }
 
     start(config) {
@@ -197,18 +228,18 @@ global.VLog = class {
             if (this.closed) return
             if (i < 0) {
                 i++;
-                trace('vlog', this.name + " vlog start minSeq=" + this.minSeq)
+                trace('vlog', name + " vlog start minSeq=" + this.minSeq)
                 internal_schedule(loop, name, name)
                 return this.onStart(this.minSeq, oldConfig)
             }
             while (i < this.votes.length) {
                 var vote = this.votes[i++]
                 if (vote.seq < this.minSeq) continue
-                trace('vlog', this.name + " read vote.seq=" + vote.seq + " vote.round=" + vote.round)
+                trace('vlog', name + " read vote.seq=" + vote.seq + " vote.round=" + vote.round)
                 internal_schedule(loop, name, name)
                 return this.onRead(vote)
             }
-            trace('vlog', this.name + " vlog recovered")
+            trace('vlog', name + " vlog recovered")
             return this.onRecovered()
         }.bind(this), name, name)
     }
@@ -223,20 +254,49 @@ global.VLog = class {
     }
 
     write(vote) {
-        var name = this.name
         this.writing++;
+        var lazyLimSeq = obj_copy(this.lazyLimSeq)
         internal_schedule(function() {
             this.writing--;
             if (this.closed) return
             this.votes.push(vote)
             trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
             this.onVoteWritten(vote)
-        }.bind(this), name, name)
+            for (var i in lazyLimSeq) {
+                if (!this.storedLimSeq[i] || this.storedLimSeq[i] < lazyLimSeq[i]) {
+                    this.storedLimSeq[i] = lazyLimSeq[i]
+                    trace('vlog', this.name + " lazy limSeq remote=" + i + " seq=" + lazyLimSeq[i])
+                    this.onLimSeqStored(i)
+                }
+            }
+        }.bind(this), this.name, this.name)
     }
 
     updateMinSeq(minSeq) {
         if (this.minSeq >= minSeq) return
         this.minSeq = minSeq
+    }
+
+    updateLimSeq(i, seq) {
+        if (seq <= this.storedLimSeq[i]) return
+        internal_schedule(function() {
+            if (this.closed) return
+            if (!this.storedLimSeq[i] || this.storedLimSeq[i] < seq) {
+                this.storedLimSeq[i] = seq
+                trace('vlog', this.name + " limSeq remote=" + i + " seq=" + seq)
+                this.onLimSeqStored(i)
+            }
+        }.bind(this), this.name, this.name)
+    }
+
+    lazyUpdateLimSeq(i, seq) {
+        if (!this.lazyLimSeq[i] || this.lazyLimSeq[i] < seq) {
+            this.lazyLimSeq[i] = seq
+        }
+    }
+
+    getStoredLimSeq(i) {
+        return this.storedLimSeq[i]
     }
 
     onRead(vote) {}
@@ -328,7 +388,7 @@ function sim_schedule(func, from, to) {
         delay += ~~sim_node_delays[from]
         delay += ~~sim_node_delays[to]
     }
-    delay = Math.floor(delay * (1 + Math.random() * 0.3))
+    delay = Math.floor(delay * (0.85 + Math.random() * 0.3))
     sim_setTimeout(func, delay)
 }
 
@@ -338,6 +398,7 @@ global.setSimTests = function(onoff, ipc_delays, vlog_delays, node_delays) {
             setImmediate = hooked_setImmediate
             internal_schedule = hooked_setImmediate
         } else {
+            sim_clock = 0
             setImmediate = sim_setImmediate
             internal_schedule = sim_schedule
             sim_ipc_delays = ipc_delays || []
@@ -350,13 +411,13 @@ global.setSimTests = function(onoff, ipc_delays, vlog_delays, node_delays) {
 global.simTests = function(test) {
     ctx.call(function() {
         setSimTests(false)
-        test()
+        ctx.call(test)
         setSimTests(true, [50, 50, 50, 50, 50, 50, 50], [5, 5, 5, 5, 5, 5, 5], [])
-        test()
+        ctx.call(test)
         setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [50, 50, 50, 50, 50, 50, 50], [])
-        test()
+        ctx.call(test)
         setSimTests(true, [5, 5, 5, 5, 5, 5, 5], [5, 5, 5, 5, 5, 5, 5], [10, 20, 30, 70, 30, 20, 10])
-        test()
+        ctx.call(test)
     })
 }
 

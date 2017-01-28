@@ -88,6 +88,7 @@ global.hooked_setImmediate = function(func) {
     })
 }
 
+global.sim_clock = 0
 var sim_scheduled = false
 var sim_queue = []
 
@@ -128,7 +129,8 @@ function sim_purge1() {
         var list = sim_queue[i]
         if (list && list.length) {
             if (i > 0) {
-                trace('clock', "clock +" + i)
+                sim_clock += i
+                trace('clock', "clock " + sim_clock + "(+" + i + ")")
                 sim_queue = sim_queue.slice(i)
             }
             var func = list.shift()

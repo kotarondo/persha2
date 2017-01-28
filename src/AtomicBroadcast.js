@@ -75,10 +75,15 @@ class AtomicBroadcast {
         this.activeReceived = {}
         this.active = false
         this.closed = false
+        this.limReq = 0
+        this.limSent = {}
+        this.limReceived = {}
+        this.limSeq = 0
         ipc.onConnected = ipcOnConnected.bind(null, this)
         ipc.onDrain = ipcOnDrain.bind(null, this)
         ipc.onReceive = ipcOnReceive.bind(null, this)
         vlog.onVoteWritten = vlogOnVoteWritten.bind(null, this)
+        vlog.onLimSeqStored = sendLim.bind(null, this)
         vlog.onStart = vlogOnStart.bind(null, this)
         vlog.onRead = vlogOnRead.bind(null, this)
         vlog.onRecovered = vlogOnRecovered.bind(null, this)
@@ -287,6 +292,7 @@ function sendVote(ab, cs, to) {
 }
 
 function sendUpdate(ab, to) {
+    if (!ab.active) return
     if (!ab.ipcSendable[to]) return
     if (ab.updateSent[to]) return
     ab.updateSent[to] = true
@@ -295,6 +301,7 @@ function sendUpdate(ab, to) {
         cbkSeq: ab.cbkSeq,
         maxSeq: ab.maxSeq,
         minSeq: ab.minSeq,
+        limReq: ab.limReq < ab.limReceived[to] ? ab.limReceived[to] : ab.limReq
     }, to)
 }
 
@@ -312,10 +319,24 @@ function sendActive(ab, to) {
     }, to)
 }
 
+function sendLim(ab, to) {
+    if (!ab.active) return
+    if (!ab.ipcSendable[to]) return
+    var seq = ab.vlog.getStoredLimSeq(to)
+    if (!seq) return
+    if (ab.limSent[to] >= seq) return
+    ab.limSent[to] = seq
+    ab.ipcSendable[to] = ab.ipc.send({
+        type: 'limit',
+        seq: seq,
+    }, to)
+}
+
 function ipcOnConnected(ab, to) {
     assert(!ab.closed)
     ab.updateSent[to] = false
     ab.activeReceived[to] = false
+    ab.limSent[to] = 0
     for (var i in ab.states) {
         var cs = ab.states[i]
         if (cs.seq < ab.minSeq) continue
@@ -329,6 +350,7 @@ function ipcOnDrain(ab, to) {
     assert(!ab.closed)
     ab.ipcSendable[to] = true
     sendUpdate(ab, to)
+    sendLim(ab, to)
     if (!ab.active || !ab.activeReceived[to]) return
     for (var i in ab.states) {
         var cs = ab.states[i]
@@ -353,6 +375,8 @@ function ipcOnReceive(ab, pkt, from) {
             var oldMaxSeq = ab.maxSeq
             updateMinSeq(ab, pkt.minSeq)
             updateMaxSeq(ab, pkt.maxSeq)
+            ab.vlog.updateLimSeq(from, pkt.limReq)
+            ab.vlog.lazyUpdateLimSeq(from, pkt.maxSeq)
             if (!ab.cbkReceived[from] || ab.cbkReceived[from] < pkt.cbkSeq) {
                 ab.cbkReceived[from] = pkt.cbkSeq
                 calcSeqs(ab)
@@ -365,6 +389,12 @@ function ipcOnReceive(ab, pkt, from) {
             ab.activeReceived[from] = true
             if (ab.ipcSendable[from]) {
                 ipcOnDrain(ab, from)
+            }
+            break
+        case 'limit':
+            if (!ab.limReceived[from] || ab.limReceived[from] < pkt.seq) {
+                ab.limReceived[from] = pkt.seq
+                calcLimSeq(ab)
             }
             break
     }
@@ -381,6 +411,19 @@ function calcSeqs(ab) {
     var seq = seqs[ab.config.M - 1]
     updateMinSeq(ab, seq - ab.config.HISTORY_SEQS)
     updateMaxSeq(ab, seq + ab.config.BUFFER_SEQS - 1)
+}
+
+function calcLimSeq(ab) {
+    var seqs = []
+    for (var from in ab.limReceived) {
+        seqs.push(ab.limReceived[from])
+    }
+    if (seqs.length < ab.config.N - ab.config.F - 1) return
+    seqs.sort((x, y) => y - x)
+    var seq = seqs[ab.config.N - ab.config.F - 2]
+    if (seq <= ab.limSeq) return
+    ab.limSeq = seq
+    writeVotePended(ab)
 }
 
 function updateMinSeq(ab, seq) {
@@ -402,6 +445,12 @@ function updateMaxSeq(ab, seq) {
     scheduleBroadcast(ab)
 }
 
+function updateLimReq(ab, seq) {
+    if (!(ab.limReq < seq)) return false
+    ab.limReq = seq
+    return true
+}
+
 function handleVote(ab, cs) {
     assert(ab.active)
     if (cs.getValue()) {
@@ -418,14 +467,25 @@ function writeVote(ab, cs) {
     var vote = cs.popVoteToWrite()
     if (!vote) return
     if (!ab.vlog.isWritable()) {
-        ab.writeVotePending = true
+        ab.writeVotePended = true
+        cs.cancelVoteToWrite(vote)
+        return
+    }
+    if (ab.limSeq < vote.seq) {
+        if (updateLimReq(ab, vote.seq)) {
+            sendUpdates(ab)
+        }
+        ab.writeVotePended = true
         cs.cancelVoteToWrite(vote)
         return
     }
     ab.vlog.write(vote)
 }
 
-function writeVoteAll(ab) {
+function writeVotePended(ab) {
+    if (!ab.writeVotePended) return
+    if (!ab.vlog.isWritable()) return
+    ab.writeVotePended = false
     for (var i in ab.states) {
         var cs = ab.states[i]
         if (cs.seq < ab.minSeq) continue
@@ -443,10 +503,7 @@ function vlogOnVoteWritten(ab, vote) {
     if (cs && cs.voteWritten(vote)) {
         handleVote(ab, cs)
     }
-    if (ab.writeVotePending && ab.vlog.isWritable()) {
-        ab.writeVotePending = false
-        writeVoteAll(ab)
-    }
+    writeVotePended(ab)
 }
 
 function vlogOnStart(ab, minSeq, oldConfig) {
@@ -458,6 +515,7 @@ function vlogOnStart(ab, minSeq, oldConfig) {
     ab.config.OLD_COLLAPSE_SEQS = oldConfig.COLLAPSE_SEQS
     if (minSeq === 0) return
     updateMinSeq(ab, minSeq)
+    updateLimReq(ab, minSeq)
     for (var i = 1; i <= ab.config.OLD_COLLAPSE_SEQS; i++) {
         var cs2 = getState(ab, minSeq - 1 + i)
         if (cs2) cs2.setRecovered()
@@ -468,6 +526,7 @@ function vlogOnRead(ab, vote) {
     // recovery
     assert(!ab.active)
     assert(!ab.closed)
+    updateLimReq(ab, vote.seq)
     var cs = getState(ab, vote.seq)
     if (cs) cs.recovery(vote)
     for (var i = 1; i <= ab.config.OLD_COLLAPSE_SEQS; i++) {
@@ -482,7 +541,9 @@ function vlogOnRecovered(ab) {
     ab.active = true
     for (var to in ab.ipcSendable) {
         sendActive(ab, to)
+        sendLim(ab, to)
     }
+    sendUpdates(ab)
     for (var i in ab.states) {
         var cs = ab.states[i]
         if (cs.seq < ab.minSeq) continue
