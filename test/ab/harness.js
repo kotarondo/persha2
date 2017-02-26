@@ -14,8 +14,6 @@ global.M = 2
 global.BUFFER_QUEUE = 1
 global.BUFFER_SEQS = 5
 global.HISTORY_SEQS = 10
-global.COLLAPSE_SEQS = 1
-global.COLLAPSE_ROUNDS = 5
 global.MERGE_ROUNDS = 4
 global.AUTO_START = true
 
@@ -36,8 +34,6 @@ function makeConfig() {
         BUFFER_QUEUE: BUFFER_QUEUE,
         BUFFER_SEQS: BUFFER_SEQS,
         HISTORY_SEQS: HISTORY_SEQS,
-        COLLAPSE_SEQS: COLLAPSE_SEQS,
-        COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
         MERGE_ROUNDS: MERGE_ROUNDS,
     }
 }
@@ -45,8 +41,7 @@ function makeConfig() {
 global.initEnv = function() {
     debug("====================")
     debug(" N=" + N + " F=" + F + " M=" + M + " BUFFER_QUEUE=" + BUFFER_QUEUE)
-    debug(" BUFFER_SEQS=" + BUFFER_SEQS + " HISTORY_SEQS=" + HISTORY_SEQS + " COLLAPSE_SEQS=" + COLLAPSE_SEQS)
-    debug(" COLLAPSE_ROUNDS=" + COLLAPSE_ROUNDS + " MERGE_ROUNDS=" + MERGE_ROUNDS)
+    debug(" BUFFER_SEQS=" + BUFFER_SEQS + " HISTORY_SEQS=" + HISTORY_SEQS + " MERGE_ROUNDS=" + MERGE_ROUNDS)
     abs = []
     ipcs = []
     vlogs = []
@@ -60,11 +55,16 @@ global.initEnv = function() {
     }
 }
 
-global.restartEnv = function(i) {
+global.restartEnv = function(i, broken) {
     trace('test', i + " restart")
     if (abs[i]) abs[i].close()
     receivedSeqs[i] = -1
-    vlogs[i] = new VLog(vlogs[i] || String(i))
+    if (!broken) {
+        vlogs[i] = new VLog(vlogs[i] || String(i))
+    } else {
+        vlogs[i] = new VLog(String(i))
+        vlogs[i].broken = true
+    }
     abs[i] = new AtomicBroadcast(makeConfig(), new IPC(i), vlogs[i])
     abs[i].onReceive = function(value, seq) {
         value = value.map(e => e.tag)
@@ -93,11 +93,18 @@ global.closeEnv = function() {
 
 var x = 0
 
-global.initDrainLoop = function(i) {
+global.resetDrainLoop = function() {
+    x = 0
+}
+
+global.initDrainLoop = function(i, stop) {
     var ab = abs[i]
     ab.onDrain = function() {
         while (true) {
-            if (x >= 26) x = 0
+            if (x >= 26) {
+                if (stop) return
+                x = 0
+            }
             if (!ab.broadcast({
                     tag: String.fromCharCode(0x41 + (x++))
                 })) break
@@ -106,7 +113,7 @@ global.initDrainLoop = function(i) {
     ab.onDrain()
 }
 
-global.initSerialLoop = function(i) {
+global.initSerialLoop = function(i, stop) {
     var ab = abs[i]
     var oldOnReceive = ab.onReceive
     ab.onReceive = function(value, seq) {
@@ -115,7 +122,10 @@ global.initSerialLoop = function(i) {
     }
 
     function doRequest() {
-        if (x >= 26) x = 0
+        if (x >= 26) {
+            if (stop) return
+            x = 0
+        }
         ab.broadcast({
             tag: String.fromCharCode(0x41 + (x++))
         })
@@ -135,9 +145,12 @@ global.IPC = class {
     constructor(from) {
         this.from = from
         this.connected = {}
+        this.closed = true
     }
 
     start() {
+        if (!this.closed) return
+        this.closed = false
         trace('ipc', "IPC start " + this.from)
         var from = this.from
         ipcs[from] = this
@@ -159,6 +172,8 @@ global.IPC = class {
     }
 
     close() {
+        if (this.closed) return
+        this.closed = true
         trace('ipc', "IPC close " + this.from)
         ipcs[this.from] = null
         this.connected = {}
@@ -179,12 +194,10 @@ global.IPC = class {
                     " weak=" + pkt.weak + " value=" + pkt.value.map(e => e.tag))
             } else if (pkt.type == 'update') {
                 trace('ipc', "send update " + from + " to " + to +
-                    " cbkSeq=" + pkt.cbkSeq + " minSeq=" + pkt.minSeq +
-                    " maxSeq=" + pkt.maxSeq + " limReq=" + pkt.limReq)
-            } else if (pkt.type == 'active') {
-                trace('ipc', "send active " + from + " to " + to)
+                    " cbkSeq=" + pkt.cbkSeq + " minSeq=" + pkt.minSeq + " maxSeq=" + pkt.maxSeq)
             } else if (pkt.type == 'limit') {
-                trace('ipc', "send limit " + from + " to " + to + " seq=" + pkt.seq)
+                trace('ipc', "send limit " + from + " to " + to +
+                    " limSeq=" + pkt.limSeq + " limReq=" + pkt.limReq)
             }
             toIPC.onReceive(pkt, from)
         }, from, to)
@@ -205,21 +218,24 @@ global.VLog = class {
             this.name = name.name
             this.votes = name.votes
             this.minSeq = name.minSeq
+            this.baseSeq = name.baseSeq
             this.storedLimSeq = name.storedLimSeq
-            this.config = name.config
             return
         }
         assert_equals(typeof name, "string")
         this.name = name
         this.votes = []
         this.minSeq = 0
+        this.baseSeq = 0
         this.storedLimSeq = {}
     }
 
-    start(config) {
+    start() {
+        if (this.broken) {
+            this.brokenStart()
+            return
+        }
         assert_equals(this.closed, undefined)
-        var oldConfig = this.config || config
-        this.config = config
         this.closed = false
         var name = this.name
         var loop
@@ -228,9 +244,9 @@ global.VLog = class {
             if (this.closed) return
             if (i < 0) {
                 i++;
-                trace('vlog', name + " vlog start minSeq=" + this.minSeq)
+                trace('vlog', name + " vlog start minSeq=" + this.minSeq + " baseSeq=" + this.baseSeq)
                 internal_schedule(loop, name, name)
-                return this.onStart(this.minSeq, oldConfig)
+                return this.onStart(this.minSeq, this.baseSeq)
             }
             while (i < this.votes.length) {
                 var vote = this.votes[i++]
@@ -240,6 +256,42 @@ global.VLog = class {
                 return this.onRead(vote)
             }
             trace('vlog', name + " vlog recovered")
+            this.recovered = true
+            return this.onRecovered()
+        }.bind(this), name, name)
+    }
+
+    brokenStart() {
+        assert_equals(this.closed, undefined)
+        this.closed = false
+        var name = this.name
+        internal_schedule(function() {
+            if (this.closed) return
+            trace('vlog', name + " vlog broken start")
+            return this.onBrokenStart()
+        }.bind(this), name, name)
+    }
+
+    initialize(minSeq) {
+        assert(this.broken)
+        this.broken = false
+        this.votes = []
+        this.minSeq = minSeq
+        this.baseSeq = minSeq
+        this.storedLimSeq = {}
+        var name = this.name
+        var loop
+        var i = -1
+        internal_schedule(loop = function() {
+            if (this.closed) return
+            if (i < 0) {
+                i++;
+                trace('vlog', name + " vlog clean start minSeq=" + this.minSeq)
+                internal_schedule(loop, name, name)
+                return this.onStart(this.minSeq, this.baseSeq)
+            }
+            trace('vlog', name + " vlog clean recovered")
+            this.recovered = true
             return this.onRecovered()
         }.bind(this), name, name)
     }
@@ -250,10 +302,14 @@ global.VLog = class {
     }
 
     isWritable() {
+        assert(!this.broken)
+        assert(this.recovered)
         return !this.writing
     }
 
     write(vote) {
+        assert(!this.broken)
+        assert(this.recovered)
         this.writing++;
         var lazyLimSeq = obj_copy(this.lazyLimSeq)
         internal_schedule(function() {
@@ -263,7 +319,7 @@ global.VLog = class {
             trace('vlog', this.name + " write vote.seq=" + vote.seq + " vote.round=" + vote.round)
             this.onVoteWritten(vote)
             for (var i in lazyLimSeq) {
-                if (!this.storedLimSeq[i] || this.storedLimSeq[i] < lazyLimSeq[i]) {
+                if (this.storedLimSeq[i] < lazyLimSeq[i]) {
                     this.storedLimSeq[i] = lazyLimSeq[i]
                     trace('vlog', this.name + " lazy limSeq remote=" + i + " seq=" + lazyLimSeq[i])
                     this.onLimSeqStored(i)
@@ -273,29 +329,36 @@ global.VLog = class {
     }
 
     updateMinSeq(minSeq) {
+        if (this.broken) return
         if (this.minSeq >= minSeq) return
         this.minSeq = minSeq
     }
 
     updateLimSeq(i, seq) {
+        if (this.broken) return
+        if (!this.recovered) return
         if (seq <= this.storedLimSeq[i]) return
         internal_schedule(function() {
             if (this.closed) return
             if (!this.storedLimSeq[i] || this.storedLimSeq[i] < seq) {
                 this.storedLimSeq[i] = seq
-                trace('vlog', this.name + " limSeq remote=" + i + " seq=" + seq)
+                trace('vlog', this.name + " update limSeq remote=" + i + " seq=" + seq)
                 this.onLimSeqStored(i)
             }
         }.bind(this), this.name, this.name)
     }
 
     lazyUpdateLimSeq(i, seq) {
+        if (this.broken) return
+        if (!this.recovered) return
         if (!this.lazyLimSeq[i] || this.lazyLimSeq[i] < seq) {
             this.lazyLimSeq[i] = seq
         }
     }
 
     getStoredLimSeq(i) {
+        assert(!this.broken)
+        assert(this.recovered)
         return this.storedLimSeq[i]
     }
 
@@ -441,8 +504,6 @@ global.envTests = function(test, loop) {
         BUFFER_QUEUE = randomInt(4) + 1
         BUFFER_SEQS = randomInt(4) + 1
         HISTORY_SEQS = randomInt(8) + 1
-        COLLAPSE_SEQS = randomInt(2)
-        COLLAPSE_ROUNDS = randomInt(5)
         MERGE_ROUNDS = randomInt(4)
         fixedEnvTest(test)
     })

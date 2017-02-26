@@ -61,7 +61,6 @@ function test() {
 // debug_flag = true
 for (var i = 0; i < 20; i++) {
     SET_WRITTEN = 0
-    COLLAPSE_ROUNDS = 1
     MERGE_ROUNDS = 0
     initEnv()
     test()

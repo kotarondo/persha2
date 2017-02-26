@@ -41,8 +41,6 @@ class ConsensusState {
      * @param {integer} config.N - total number of nodes
      * @param {integer} config.F - acceptable number of failure nodes
      * @param {integer} config.MERGE_ROUNDS - optimizing parameter
-     * @param {integer} config.OLD_COLLAPSE_ROUNDS - optimizing parameter
-     * @param {integer} config.COLLAPSE_ROUNDS - optimizing parameter
      * @param {any} seq - the identifier inserted into votes
      */
     constructor(config, seq) {
@@ -233,12 +231,14 @@ function setVote0(cs, value, weak) {
     cs.committed = false
 }
 
+const COLLAPSE_ROUNDS = 7
+
 function setVote(cs, value, weak) {
-    if (0 <= cs.recovered && cs.round <= cs.recovered + cs.config.OLD_COLLAPSE_ROUNDS) {
+    if (0 <= cs.recovered && cs.round <= cs.recovered + COLLAPSE_ROUNDS) {
         weak = true
     }
     setVote0(cs, value, weak)
-    if (0 <= cs.written && cs.round <= cs.written + cs.config.COLLAPSE_ROUNDS) {
+    if (0 <= cs.written && cs.round <= cs.written + COLLAPSE_ROUNDS) {
         if (weak || (cs.round & 1)) {
             setCommitted(cs)
         }

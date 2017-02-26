@@ -10,7 +10,6 @@ global.ConsensusState = require('../../src/ConsensusState')
 global.N = 1
 global.F = 0
 global.SET_WRITTEN = 0
-global.COLLAPSE_ROUNDS = 0
 global.MERGE_ROUNDS = 0
 
 global.states = []
@@ -18,15 +17,13 @@ global.journals = []
 
 global.initEnv = function() {
     debug("====================")
-    debug("SET_WRITTEN=" + SET_WRITTEN + " COLLAPSE_ROUNDS=" + COLLAPSE_ROUNDS + " MERGE_ROUNDS=" + MERGE_ROUNDS)
+    debug("SET_WRITTEN=" + SET_WRITTEN + " MERGE_ROUNDS=" + MERGE_ROUNDS)
     states = []
     journals = []
     for (var i = 0; i < N; i++) {
         var config = {
             N: N,
             F: F,
-            OLD_COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
-            COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
             MERGE_ROUNDS: MERGE_ROUNDS,
         }
         states[i] = new ConsensusState(config)
@@ -39,8 +36,6 @@ global.restartEnv = function(i) {
     var config = {
         N: N,
         F: F,
-        OLD_COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
-        COLLAPSE_ROUNDS: COLLAPSE_ROUNDS,
         MERGE_ROUNDS: MERGE_ROUNDS,
     }
     states[i] = new ConsensusState(config)
@@ -172,14 +167,11 @@ global.dump = function() {
 
 global.envTests = function(test) {
     for (var s = 0; s < 2; s++) {
-        for (var c = 0; c < 10; c++) {
-            for (var m = 0; m < 10; m++) {
-                SET_WRITTEN = s
-                COLLAPSE_ROUNDS = c
-                MERGE_ROUNDS = m
-                initEnv()
-                test()
-            }
+        for (var m = 0; m < 10; m++) {
+            SET_WRITTEN = s
+            MERGE_ROUNDS = m
+            initEnv()
+            test()
         }
     }
 }
