@@ -1,29 +1,35 @@
 {
-  "name": "persha2",
-  "version": "0.0.2",
-  "description": "Persistent and Highly Available JavaScript Engine",
-  "author": "Kotaro Endo <kotarondo@gmail.com>",
-  "license": "BSD-3-Clause",
-  "keywords": [
-    "persistence",
-    "high-availability",
-    "javascript"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kotarondo/persha2.git"
-  },
-  "bugs": {
-    "url": "https://github.com/kotarondo/persha2/issues"
-  },
-  "engines": {
-    "node": ">=4.3"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "promise_context": ">=0.1"
-  },
-  "scripts": {
-    "test": "./test/run-tests.sh"
-  }
+    "name": "persha2",
+    "version": "0.0.2",
+    "description": "Persistent and Highly Available JavaScript Engine",
+    "author": "Kotaro Endo <kotarondo@gmail.com>",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "persistence",
+        "high-availability",
+        "javascript"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kotarondo/persha2.git"
+    },
+    "bugs": {
+        "url": "https://github.com/kotarondo/persha2/issues"
+    },
+    "engines": {
+        "node": ">=4.3"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "promise_context": ">=0.1"
+    },
+    "files": [
+        "src/AtomicBroadcast.js",
+        "src/ConsensusState.js",
+        "src/sandbox",
+        "index.js"
+    ],
+    "scripts": {
+        "test": "./test/run-tests.sh"
+    }
 }

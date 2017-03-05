@@ -22,7 +22,7 @@ global.test_success = function() {
 
 global.assert = function(expr, msg) {
     if (!expr) {
-        var err = new Error("NG: assert failed: " + msg)
+        var err = new Error("NG: assert failed:", msg)
         debugger
         throw err
     }
