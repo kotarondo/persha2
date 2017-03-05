@@ -389,8 +389,6 @@ function ipcOnReceive(ab, pkt, from) {
             }
             if (!ab.activeReceived[from]) {
                 ab.activeReceived[from] = true
-                sendUpdate(ab, from)
-                sendLim(ab, from)
                 sendVoteAll(ab, from)
             }
             if (ab.active && ab.vlog.getStoredLimSeq(from) < pkt.maxSeq + LIMIT_STEP) {
