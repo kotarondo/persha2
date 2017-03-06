@@ -1,166 +1,112 @@
-const fs = require('fs')
-const path = require('path')
-const vm = require('vm')
+/*
+ Copyright (c) 2015-2017, Kotaro Endo.
+ All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 
+ 2. Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following
+    disclaimer in the documentation and/or other materials provided
+    with the distribution.
+ 
+ 3. Neither the name of the copyright holder nor the names of its
+    contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+ 
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
-const filenames = ["helper.js", "type_constants.js", "import_export.js", "snapshot.js", "unicode.js", "regexp_compiler.js", "compiler.js", "builtinArray.js", "builtinBoolean.js", "builtinBuffer.js", "builtinDate.js", "builtinError.js", "builtinFunction.js", "builtinGlobal.js", "builtinJSON.js", "builtinMath.js", "builtinNumber.js", "builtinObject.js", "builtinRegExp.js", "builtinString.js", "conversion.js", "expression.js", "function.js", "statement.js", "program.js", "parser.js", "intrinsic.js", "execution.js", "types.js", "vm.js"]
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
 
-const exposes = ["initializeVM", "writeSnapshot", "readSnapshot", "evaluateProgram"]
+const filenames = ["helper.js", "type_constants.js", "import_export.js", "snapshot.js", "unicode.js", "regexp_compiler.js", "compiler.js", "builtinArray.js", "builtinBoolean.js", "builtinBuffer.js", "builtinDate.js", "builtinError.js", "builtinFunction.js", "builtinGlobal.js", "builtinJSON.js", "builtinMath.js", "builtinNumber.js", "builtinObject.js", "builtinRegExp.js", "builtinString.js", "conversion.js", "expression.js", "function.js", "statement.js", "program.js", "parser.js", "intrinsic.js", "execution.js", "types.js", "vm.js"];
 
-var codes = []
+var context = vm.createContext({
+    Buffer: Buffer,
+    console: console,
+});
+
 for (var filename of filenames) {
-    codes[filename] = fs.readFileSync(path.join(__dirname, filename)).toString()
+    var code = fs.readFileSync(path.join(__dirname, filename)).toString()
+    vm.runInContext(code, context, {
+        filename: filename,
+        displayErrors: true,
+    });
+}
+
+function createObj(Class, arg1, arg2) {
+    switch (Class) {
+        case 'Buffer':
+            return new Buffer(arg1);
+        case 'Date':
+            return new Date(arg1);
+        case 'Error':
+            switch (arg1) {
+                case 'TypeError':
+                    return new TypeError(arg2);
+                case 'ReferenceError':
+                    return new ReferenceError(arg2);
+                case 'RangeError':
+                    return new RangeError(arg2);
+                case 'SyntaxError':
+                    return new SyntaxError(arg2);
+            }
+            return new Error(arg2);
+        case 'Array':
+            return new Array(arg1);
+    }
+    return {};
+}
+
+function classofObj(obj) {
+    if (Array.isArray(obj)) return 'Array';
+    if (Buffer.isBuffer(obj)) return 'Buffer';
+    if (obj instanceof Date) return 'Date';
+    if (obj instanceof Error) return 'Error';
+    if (obj instanceof Function) return 'Function';
+    return 'Object';
 }
 
 function Sandbox() {
-    var context = vm.createContext({
-        Buffer: Buffer,
-        console: console,
-    })
-    for (var filename of filenames) {
-        vm.runInContext(codes[filename], context, {
-            filename: filename,
-            displayErrors: true,
-        })
+    var vm;
+
+    this.initializeVM = function() {
+        context.initializeVM();
+        vm = context.vm;
     }
-    for (var expose of exposes) {
-        this[expose] = context[expose]
+
+    this.writeSnapshot = function(ostream) {
+        context.vm = vm;
+        context.writeSnapshot(ostream);
+    }
+
+    this.readSnapshot = function(istream) {
+        context.readSnapshot(istream);
+        vm = context.vm;
     }
 
     this.evaluateProgram = function(text, filename) {
-        var result = context.export_evaluateProgram(text, filename);
-        result.value = importValue(result.value);
+        context.vm = vm;
+        var result = context.evaluateProgram(text, filename);
+        result.value = context.exportValue(result.value, createObj);
         return result;
     }
-}
-
-function isPrimitiveValue(x) {
-    switch (typeof x) {
-        case "undefined":
-        case "boolean":
-        case "number":
-        case "string":
-            return true;
-    }
-    if (x === null) return true;
-    return false;
-}
-
-function exportValue(A) {
-    if (isPrimitiveValue(A)) {
-        return A;
-    }
-    return exportObject(A, new WeakMap());
-}
-
-function importValue(a) {
-    if (isPrimitiveValue(a)) {
-        return a;
-    }
-    return importObject(a, new WeakMap());
-}
-
-function exportObject(A, map) {
-    if (map.has(A)) {
-        return map.get(A);
-    }
-    if (A instanceof Buffer) {
-        return {
-            class: 'Buffer',
-            value: new Buffer(A), // safeguard
-        };
-    }
-    if (A instanceof Date) {
-        return {
-            class: 'Date',
-            value: A.getTime(),
-        };
-    }
-    if (A instanceof Function) {
-        return undefined;
-    }
-    if (A instanceof Error) {
-        return {
-            class: 'Error',
-            name: String(A.name),
-            message: String(A.message),
-        };
-    }
-
-    if (A instanceof Array) {
-        var a = {
-            class: 'Array',
-            length: A.length,
-            value: [],
-        };
-    } else {
-        var a = {
-            class: 'Object',
-            value: {},
-        };
-    }
-    map.set(A, a);
-    for (var P in A) {
-        if (!A.hasOwnProperty(P)) continue;
-        if (P === 'caller' || P === 'callee' || P === 'arguments') {
-            continue;
-        }
-        var v = A[P];
-        if (isPrimitiveValue(v)) {
-            a.value[P] = v;
-        } else {
-            a.value[P] = exportObject(v, map);
-        }
-    }
-    return a;
-}
-
-function importObject(a, map) {
-    if (map.has(a)) {
-        return map.get(a);
-    }
-    if (a.class === 'Buffer') {
-        return a.value;
-    }
-    if (a.class === 'Date') {
-        return new Date(a.value);
-    }
-    if (a.class === 'Error') {
-        var message = String(a.message);
-        switch (a.name) {
-            case 'TypeError':
-                return new TypeError(message);
-            case 'ReferenceError':
-                return new ReferenceError(message);
-            case 'RangeError':
-                return new RangeError(message);
-            case 'SyntaxError':
-                return new SyntaxError(message);
-            default:
-                return new Error(message);
-        }
-    }
-
-    if (a.class === 'Array') {
-        var A = new Array(Number(a.length));
-    } else {
-        var A = {};
-    }
-    map.set(a, A);
-    for (var P in a.value) {
-        var v = a.value[P];
-        if (isPrimitiveValue(v)) {
-            A[P] = v;
-        } else {
-            A[P] = importObject(v, map);
-        }
-    }
-    return A;
-}
-
-function export_evaluateProgram(text, filename) {
-    var result = evaluateProgram(text, filename);
-    result.value = exportValue(result.value);
-    return result;
 }
 
 module.exports = Sandbox

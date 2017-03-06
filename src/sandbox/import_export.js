@@ -31,61 +31,39 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-function exportValue(A) {
+function exportValue(A, createObj) {
     if (A === empty) {
         return undefined;
     }
     if (isPrimitiveValue(A)) {
         return A;
     }
-    return exportObject(A, new WeakMap());
-}
-
-function importValue(a) {
-    if (isPrimitiveValue(a)) {
-        return a;
+    try {
+        return exportObject(A, new WeakMap(), createObj);
+    } catch (e) {
+        return undefined;
     }
-    return importObject(a, new WeakMap());
 }
 
-function exportObject(A, map) {
+function exportObject(A, map, createObj) {
     if (map.has(A)) {
         return map.get(A);
     }
-    if (A.Class === 'Buffer') {
-        return {
-            class: 'Buffer',
-            value: new Buffer(A.wrappedBuffer), // safeguard
-        };
-    }
-    if (A.Class === 'Date') {
-        return {
-            class: 'Date',
-            value: A.PrimitiveValue,
-        };
-    }
-    if (A.Class === 'Function') {
-        return undefined;
-    }
-    if (A.Class === 'Error') {
-        return {
-            class: 'Error',
-            name: ToString(A.Get('name')),
-            message: ToString(A.Get('message')),
-        };
-    }
-
-    if (A.Class === 'Array') {
-        var a = {
-            class: 'Array',
-            length: A.Get('length'),
-            value: [],
-        };
-    } else {
-        var a = {
-            class: 'Object',
-            value: {},
-        };
+    switch (A.Class) {
+        case 'Buffer':
+            return createObj('Buffer', A.wrappedBuffer);
+        case 'Date':
+            return createObj('Date', A.PrimitiveValue);
+        case 'Function':
+            return undefined;
+        case 'Error':
+            return createObj('Error', ToString(A.Get('name')), ToString(A.Get('message')));
+        case 'Array':
+            var a = createObj('Array', A.Get('length'));
+            break;
+        default:
+            var a = createObj('Object');
+            break;
     }
     map.set(A, a);
     var next = A.enumerator(true, true);
@@ -95,66 +73,80 @@ function exportObject(A, map) {
             continue;
         }
         var v = A.Get(P);
-        if (isPrimitiveValue(v)) {
-            a.value[P] = v;
-        } else {
-            a.value[P] = exportObject(v, map);
+        if (!isPrimitiveValue(v)) {
+            try {
+                v = exportObject(v, map, createObj);
+                if (v === undefined) continue;
+            } catch (e) {
+                continue;
+            }
         }
+        a[P] = v;
     }
     return a;
 }
 
-function importObject(a, map) {
+function importValue(a, classofObj) {
+    if (isPrimitiveValue(a)) {
+        return a;
+    }
+    try {
+        return importObject(a, new WeakMap(), classofObj);
+    } catch (e) {
+        return undefined;
+    }
+}
+
+function importObject(a, map, classofObj) {
     if (map.has(a)) {
         return map.get(a);
     }
-    if (a.class === 'Buffer') {
-        var A = VMObject(CLASSID_Buffer);
-        A.Prototype = vm.Buffer_prototype;
-        A.Extensible = true;
-        A.wrappedBuffer = a;
-        defineFinal(A, 'length', a.length);
-        defineFinal(A, 'parent', A);
-        return A;
-    }
-    if (a.class === 'Date') {
-        return Date_Construct([a.value]);
-    }
-    if (a.class === 'Error') {
-        var message = String(a.message);
-        switch (a.name) {
-            case 'TypeError':
-                return TypeError_Construct([message]);
-            case 'ReferenceError':
-                return ReferenceError_Construct([message]);
-            case 'RangeError':
-                return RangeError_Construct([message]);
-            case 'SyntaxError':
-                return SyntaxError_Construct([message]);
-            default:
-                return Error_Construct([message]);
-        }
-    }
-
-    if (a.class === 'Array') {
-        var A = Array_Construct([Number(a.length)]);
-    } else {
-        var A = Object_Construct([]);
+    switch (classofObj(a)) {
+        case 'Buffer':
+            var A = VMObject(CLASSID_Buffer);
+            A.Prototype = vm.Buffer_prototype;
+            A.Extensible = true;
+            A.wrappedBuffer = new Buffer(a);
+            defineFinal(A, 'length', a.length);
+            defineFinal(A, 'parent', A);
+            return A;
+        case 'Date':
+            return Date_Construct([Number(a.getTime())]);
+        case 'Function':
+            return undefined;
+        case 'Error':
+            var message = String(a.message);
+            switch (a.name) {
+                case 'TypeError':
+                    return TypeError_Construct([message]);
+                case 'ReferenceError':
+                    return ReferenceError_Construct([message]);
+                case 'RangeError':
+                    return RangeError_Construct([message]);
+                case 'SyntaxError':
+                    return SyntaxError_Construct([message]);
+                default:
+                    return Error_Construct([message]);
+            }
+        case 'Array':
+            var A = Array_Construct([Number(a.length)]);
+            break;
+        default:
+            var A = Object_Construct([]);
+            break;
     }
     map.set(a, A);
-    for (var P in a.value) {
-        var v = a.value[P];
-        if (isPrimitiveValue(v)) {
-            A.Put(P, v, false);
-        } else {
-            A.Put(P, importObject(v, map), false);
+    for (var P in a) {
+        var v = a[P];
+        if (!isPrimitiveValue(v)) {
+            try {
+                v = importObject(v, map, classofObj);
+                if (v === undefined) continue;
+            } catch (e) {
+                continue;
+            }
         }
+        A.Put(P, v, false);
     }
     return A;
-}
-
-function export_evaluateProgram(text, filename) {
-    var result = evaluateProgram(text, filename);
-    result.value = exportValue(result.value);
-    return result;
 }
