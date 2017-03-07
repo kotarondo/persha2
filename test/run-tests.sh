@@ -9,7 +9,7 @@ SUCCESS=0
 NAMEBASES=$*
 
 if [ -z "$NAMEBASES" ]; then
-	NAMEBASES="ab/test cs/test ab/perf test262/test"
+	NAMEBASES="sb/basic ab/test ab/perf cs/test sb/test262"
 fi
 
 for dir in $NAMEBASES
