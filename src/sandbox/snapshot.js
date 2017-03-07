@@ -44,9 +44,6 @@ function SnapshotOutputStream(ostream, allObjs) {
         writeBuffer: function(x) {
             ostream.writeBuffer(x);
         },
-        writeAny: function(x) {
-            ostream.writeAny(x);
-        },
         writeValue: function(x) {
             switch (typeof x) {
                 case "undefined":
@@ -84,9 +81,6 @@ function SnapshotInputStream(istream, allObjs) {
         },
         readBuffer: function() {
             return istream.readBuffer();
-        },
-        readAny: function() {
-            return istream.readAny();
         },
         readValue: function() {
             var ID = istream.readInt();
@@ -187,7 +181,7 @@ function readSnapshot(l_istream) {
     allObjs.length = OBJID_BASE;
     var istream = SnapshotInputStream(l_istream, allObjs);
     var version = istream.readString();
-    if (version !== "v2.1") {
+    if (version !== "v3.0") {
         throw Error("unsupported format version: " + version);
     }
 
