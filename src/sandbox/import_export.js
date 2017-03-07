@@ -57,7 +57,7 @@ function exportObject(A, map, createObj) {
         case 'Function':
             return undefined;
         case 'Error':
-            return createObj('Error', ToString(A.Get('name')), ToString(A.Get('message')));
+            return createObj('Error', ToString(A.Get('name')), ToString(A.Get('message')), ToString(A.Get('stack')));
         case 'Array':
             var a = createObj('Array', A.Get('length'));
             break;

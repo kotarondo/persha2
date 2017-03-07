@@ -50,7 +50,7 @@ for (var filename of filenames) {
     });
 }
 
-function createObj(Class, arg1, arg2) {
+function createObj(Class, arg1, arg2, arg3) {
     switch (Class) {
         case 'Buffer':
             return new Buffer(arg1);
@@ -59,15 +59,23 @@ function createObj(Class, arg1, arg2) {
         case 'Error':
             switch (arg1) {
                 case 'TypeError':
-                    return new TypeError(arg2);
+                    var e = new TypeError(arg2);
+                    break;
                 case 'ReferenceError':
-                    return new ReferenceError(arg2);
+                    var e = new ReferenceError(arg2);
+                    break;
                 case 'RangeError':
-                    return new RangeError(arg2);
+                    var e = new RangeError(arg2);
+                    break;
                 case 'SyntaxError':
-                    return new SyntaxError(arg2);
+                    var e = new SyntaxError(arg2);
+                    break;
+                default:
+                    var e = new Error(arg2);
+                    break;
             }
-            return new Error(arg2);
+            e.stack = arg3;
+            return e;
         case 'Array':
             return new Array(arg1);
     }
