@@ -318,7 +318,7 @@ function VMObject(ClassID) {
         default:
             assert(false, ClassID);
     }
-    obj.$properties = Object.create(null);
+    obj.properties = Object.create(null);
     obj.Prototype = undefined;
     obj.Extensible = undefined;
     obj.ID = 0;
@@ -544,7 +544,7 @@ function ToPropertyDescriptor(Obj) {
 }
 
 function default_GetOwnProperty(P) {
-    return this.$properties[P];
+    return this.properties[P];
 }
 
 function default_GetProperty(P) {
@@ -558,7 +558,7 @@ function default_GetProperty(P) {
 
 function default_FastGetProperty(P) {
     var O = this;
-    var prop = O.$properties[P];
+    var prop = O.properties[P];
     if (prop !== undefined) return prop;
     var proto = O.Prototype;
     if (proto === null) return undefined;
@@ -580,7 +580,7 @@ function default_Get(P) {
 
 function default_FastGet(P) {
     var O = this;
-    var desc = O.$properties[P];
+    var desc = O.properties[P];
     if (desc === undefined) {
         var proto = O.Prototype;
         if (proto === null) return undefined;
@@ -652,7 +652,7 @@ function default_Put(P, V, Throw) {
 
 function default_FastPut(P, V, Throw) {
     var O = this;
-    var ownDesc = O.$properties[P];
+    var ownDesc = O.properties[P];
     if (ownDesc) {
         if (ownDesc.Writable === true) {
             ownDesc.Value = V;
@@ -837,7 +837,7 @@ function default_enumerator(ownOnly, enumerableOnly) {
 }
 
 function intrinsic_set(O, P, Desc) {
-    var x = O.$properties[P];
+    var x = O.properties[P];
     if (Desc.Value !== absent) x.Value = Desc.Value;
     if (Desc.Writable !== absent) x.Writable = Desc.Writable;
     if (Desc.Get !== absent) x.Get = Desc.Get;
@@ -847,16 +847,16 @@ function intrinsic_set(O, P, Desc) {
 }
 
 function intrinsic_set_value(O, P, V) {
-    O.$properties[P].Value = V;
+    O.properties[P].Value = V;
 }
 
 function intrinsic_remove(O, P) {
-    delete O.$properties[P] && O.numProps--;
+    delete O.properties[P] && O.numProps--;
 }
 
 function intrinsic_createData(O, P, Value, Writable, Enumerable, Configurable) {
     O.numProps++; // maybe inaccurate
-    O.$properties[P] = ({
+    O.properties[P] = ({
         Value: (Value !== absent) ? Value : undefined,
         Writable: (Writable !== absent) ? Writable : false,
         Get: absent,
@@ -868,7 +868,7 @@ function intrinsic_createData(O, P, Value, Writable, Enumerable, Configurable) {
 
 function intrinsic_createAccessor(O, P, Get, Set, Enumerable, Configurable) {
     O.numProps++; // maybe inaccurate
-    O.$properties[P] = ({
+    O.properties[P] = ({
         Value: absent,
         Writable: absent,
         Get: (Get !== absent) ? Get : undefined,
@@ -879,13 +879,13 @@ function intrinsic_createAccessor(O, P, Get, Set, Enumerable, Configurable) {
 }
 
 function intrinsic_enumerator(O, ownOnly, enumerableOnly) {
-    var names = Object.keys(O.$properties);
+    var names = Object.keys(O.properties);
     if (ownOnly !== true) {
         var all = Object.create(null);
         var proto = O;
         while (proto !== null) {
-            for (var P in proto.$properties) {
-                var desc = proto.$properties[P];
+            for (var P in proto.properties) {
+                var desc = proto.properties[P];
                 if (enumerableOnly === false || desc.Enumerable === true) {
                     all[P] = P;
                 }
@@ -915,14 +915,14 @@ function intrinsic_enumerator(O, ownOnly, enumerableOnly) {
         while (true) {
             var P = names[i++];
             if (P === undefined) return undefined;
-            var desc = O.$properties[P];
+            var desc = O.properties[P];
             if (desc === undefined) {
                 if (ownOnly === true) {
                     continue;
                 }
                 var proto = O.Prototype;
                 while (proto !== null) {
-                    var desc = proto.$properties[P];
+                    var desc = proto.properties[P];
                     if (desc !== undefined) {
                         break;
                     }

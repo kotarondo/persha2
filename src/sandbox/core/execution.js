@@ -34,7 +34,7 @@
 // ECMAScript 5.1: 10 Executable Code and Execution Contexts
 
 const Class_DeclarativeEnvironment = ({
-    // $attributes
+    // attributes
     // 0: Mutable Deletable
     // 1: Mutable Undeletable
     // 2: Immutable Initialized
@@ -46,40 +46,40 @@ const Class_DeclarativeEnvironment = ({
     readObject: DeclarativeEnvironment_readObject,
 
     HasBinding: function(N) {
-        if (this.$attributes[N] !== undefined) return true;
+        if (this.attributes[N] !== undefined) return true;
         return false;
     },
 
     CreateMutableBinding: function(N, D) {
-        assert(this.$attributes[N] === undefined, N);
+        assert(this.attributes[N] === undefined, N);
         if (D === true) {
-            this.$attributes[N] = 0;
+            this.attributes[N] = 0;
         } else {
-            this.$attributes[N] = 1;
+            this.attributes[N] = 1;
         }
     },
 
     SetMutableBinding: function(N, V, S) {
-        if (this.$attributes[N] === undefined) return;
-        if (this.$attributes[N] <= 1) {
-            this.$values[N] = V;
+        if (this.attributes[N] === undefined) return;
+        if (this.attributes[N] <= 1) {
+            this.values[N] = V;
         } else if (S === true) throw VMTypeError();
     },
 
     GetBindingValue: function(N, S) {
-        assert(this.$attributes[N] !== undefined, N);
-        if (this.$attributes[N] === 3) {
+        assert(this.attributes[N] !== undefined, N);
+        if (this.attributes[N] === 3) {
             if (S === false) return undefined;
             throw VMReferenceError(N);
         }
-        return this.$values[N];
+        return this.values[N];
     },
 
     DeleteBinding: function(N) {
-        if (this.$attributes[N] === undefined) return true;
-        if (this.$attributes[N] !== 0) return false;
-        delete(this.$values[N]);
-        delete(this.$attributes[N]);
+        if (this.attributes[N] === undefined) return true;
+        if (this.attributes[N] !== 0) return false;
+        delete(this.values[N]);
+        delete(this.attributes[N]);
         return true;
     },
 
@@ -88,14 +88,14 @@ const Class_DeclarativeEnvironment = ({
     },
 
     CreateImmutableBinding: function(N) {
-        assert(this.$attributes[N] === undefined, N);
-        this.$attributes[N] = 3;
+        assert(this.attributes[N] === undefined, N);
+        this.attributes[N] = 3;
     },
 
     InitializeImmutableBinding: function(N, V) {
-        assert(this.$attributes[N] === 3, N);
-        this.$values[N] = V;
-        this.$attributes[N] = 2;
+        assert(this.attributes[N] === 3, N);
+        this.values[N] = V;
+        this.attributes[N] = 2;
     },
 });
 
@@ -178,8 +178,8 @@ function GetIdentifierEnvironmentRecord(lex, skip, name) {
 
 function NewDeclarativeEnvironment(E) {
     var obj = Object.create(Class_DeclarativeEnvironment);
-    obj.$values = Object.create(null);
-    obj.$attributes = Object.create(null);
+    obj.values = Object.create(null);
+    obj.attributes = Object.create(null);
     obj.outer = E;
     obj.ID = 0;
     return obj;
@@ -500,7 +500,7 @@ function Arguments_Delete(P, Throw) {
 
 function Global_FastGetBindingValue(N, S) {
     var bindings = realm.theGlobalObject;
-    var desc = bindings.$properties[N];
+    var desc = bindings.properties[N];
     if (desc === undefined) {
         var proto = bindings.Prototype;
         if (proto === null) {

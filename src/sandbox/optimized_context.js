@@ -57,7 +57,8 @@ var variables = [];
 
 for (var filename of filenames) {
     var code = fs.readFileSync(path.join(__dirname, "core", filename)).toString()
-        //TODO collect global names
+    code = code.split(/\b/);
+    //TODO collect global names
     codes.push(code);
 }
 
@@ -65,7 +66,7 @@ for (var code of codes) {
     for (var name in map) {
         //TODO rename codes
     }
-    vm.runInThisContext(code, {
+    vm.runInThisContext(code.join(''), {
         filename: filename,
         displayErrors: true,
     });

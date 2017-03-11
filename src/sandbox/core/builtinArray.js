@@ -821,7 +821,7 @@ function Array_DefineOwnProperty(P, Desc, Throw) {
 
 function Array_FastPut(P, V, Throw) {
     var O = this;
-    var ownDesc = O.$properties[P];
+    var ownDesc = O.properties[P];
     if (P === "length") {
         if (ownDesc.Writable === false) {
             if (Throw === true) throw VMTypeError();
@@ -832,16 +832,16 @@ function Array_FastPut(P, V, Throw) {
         var newLen = ToUint32(V);
         if (newLen !== V) throw VMRangeError();
         if (oldLen - newLen > 2 * O.numProps) {
-            for (var P in O.$properties) {
+            for (var P in O.properties) {
                 var index = ToArrayIndex(P);
                 if (index >= newLen) {
-                    if (O.$properties[P].Configurable === false) {
+                    if (O.properties[P].Configurable === false) {
                         newLen = index;
                     }
                 }
             }
             ownDesc.Value = newLen;
-            for (var P in O.$properties) {
+            for (var P in O.properties) {
                 var index = ToArrayIndex(P);
                 if (index >= newLen) {
                     intrinsic_remove(O, P);
@@ -871,7 +871,7 @@ function Array_FastPut(P, V, Throw) {
         if (proto === null || proto.GetProperty(P) === undefined) {
             var index = ToArrayIndex(P);
             if (index >= 0) {
-                var oldLenDesc = O.$properties["length"];
+                var oldLenDesc = O.properties["length"];
                 var oldLen = oldLenDesc.Value;
                 if (index >= oldLen) {
                     if (oldLenDesc.Writable === false) {

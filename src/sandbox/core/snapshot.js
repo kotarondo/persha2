@@ -242,8 +242,8 @@ function readSnapshot(l_istream) {
 
 function intrinsic_walkObject(O, mark) {
     mark(O.Prototype);
-    for (var P in O.$properties) {
-        var prop = O.$properties[P];
+    for (var P in O.properties) {
+        var prop = O.properties[P];
         if (prop.Value !== absent) mark(prop.Value);
         if (prop.Get !== absent) mark(prop.Get);
         if (prop.Set !== absent) mark(prop.Set);
@@ -253,8 +253,8 @@ function intrinsic_walkObject(O, mark) {
 function intrinsic_writeObject(O, ostream) {
     ostream.writeValue(O.Prototype);
     ostream.writeValue(O.Extensible);
-    for (var P in O.$properties) {
-        var prop = O.$properties[P];
+    for (var P in O.properties) {
+        var prop = O.properties[P];
         var flag = (prop.Configurable ? 0 : 1) + (prop.Enumerable ? 0 : 2);
         if (IsDataDescriptor(prop)) {
             flag += (prop.Writable ? 0 : 4);
@@ -492,21 +492,21 @@ function ObjectEnvironment_readObject(istream) {
 
 function DeclarativeEnvironment_walkObject(mark) {
     var envRec = this;
-    var $values = envRec.$values;
+    var values = envRec.values;
     mark(this.outer);
-    for (var N in $values) {
-        mark($values[N]);
+    for (var N in values) {
+        mark(values[N]);
     }
 }
 
 function DeclarativeEnvironment_writeObject(ostream) {
     var envRec = this;
-    var $values = envRec.$values;
-    var $attributes = envRec.$attributes;
+    var values = envRec.values;
+    var attributes = envRec.attributes;
     ostream.writeValue(this.outer);
-    for (var N in $values) {
-        ostream.writeInt($attributes[N]);
-        ostream.writeValue($values[N]);
+    for (var N in values) {
+        ostream.writeInt(attributes[N]);
+        ostream.writeValue(values[N]);
         ostream.writeString(N);
     }
     ostream.writeInt(4);
@@ -514,8 +514,8 @@ function DeclarativeEnvironment_writeObject(ostream) {
 
 function DeclarativeEnvironment_readObject(istream) {
     var envRec = this;
-    var $values = envRec.$values;
-    var $attributes = envRec.$attributes;
+    var values = envRec.values;
+    var attributes = envRec.attributes;
     this.outer = istream.readValue();
     while (true) {
         var attr = istream.readInt();
@@ -525,8 +525,8 @@ function DeclarativeEnvironment_readObject(istream) {
         istream.assert(attr <= 3);
         var value = istream.readValue();
         var N = istream.readString();
-        $attributes[N] = attr;
-        $values[N] = value;
+        attributes[N] = attr;
+        values[N] = value;
     }
     istream.assert(this.outer === null || Type(this.outer) === TYPE_Environment);
 }

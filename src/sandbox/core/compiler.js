@@ -526,7 +526,7 @@ CompilerContext.prototype.compileGetValue = function(ref) {
         var base = ref.base;
         if (base.types === COMPILER_FUNCTION_ENV_TYPE || base.types === COMPILER_CATCH_ENV_TYPE ||
             base.types === COMPILER_NAMED_FUNCTION_ENV_TYPE) {
-            return this.defineValue(base.name + " .$values[" + ref.name + "]");
+            return this.defineValue(base.name + " .values[" + ref.name + "]");
         } else if (base.types === COMPILER_GLOBAL_ENV_TYPE) {
             return this.defineValue("Global_FastGetBindingValue(" + ref.name + ")");
         }
@@ -559,7 +559,7 @@ CompilerContext.prototype.compilePutValue = function(ref, val) {
     } else if (ref.types === COMPILER_IDENTIFIER_REFERENCE_TYPE) {
         var base = ref.base;
         if (base.types === COMPILER_FUNCTION_ENV_TYPE || base.types === COMPILER_CATCH_ENV_TYPE) {
-            this.text(base.name + " .$values[" + ref.name + "]= " + val.name + ";");
+            this.text(base.name + " .values[" + ref.name + "]= " + val.name + ";");
             return;
         } else if (base.types === COMPILER_GLOBAL_ENV_TYPE) {
             this.text("realm.theGlobalObject.Put(" + ref.name + "," + val.name + "," + ref.strict + ");");
