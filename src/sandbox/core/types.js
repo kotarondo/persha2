@@ -388,7 +388,7 @@ function PutValue(V, W) {
     var base = V.base;
     if (IsUnresolvableReference(V)) {
         if (V.strictReference === true) throw VMReferenceError(V.referencedName + " is not defined");
-        vm.theGlobalObject.Put(V.referencedName, W, false);
+        realm.theGlobalObject.Put(V.referencedName, W, false);
     } else if (IsPropertyReference(V)) {
         if (HasPrimitiveBase(V) === false) {
             base.Put(V.referencedName, W, V.strictReference);
@@ -964,7 +964,7 @@ function defineConstruct(obj, func) {
 
 function defineFunction(obj, name, length, func) {
     var F = VMObject(CLASSID_BuiltinFunction);
-    F.Prototype = vm.Function_prototype;
+    F.Prototype = realm.Function_prototype;
     F.Extensible = true;
     defineCall(F, func);
     defineFinal(F, "length", length);
@@ -975,14 +975,14 @@ function defineFunction(obj, name, length, func) {
 function defineAccessor(obj, name, get, set) {
     if (get !== undefined) {
         var Get = VMObject(CLASSID_BuiltinFunction);
-        Get.Prototype = vm.Function_prototype;
+        Get.Prototype = realm.Function_prototype;
         Get.Extensible = true;
         defineCall(Get, get);
         defineFinal(Get, "length", 0);
     }
     if (set !== undefined) {
         var Set = VMObject(CLASSID_BuiltinFunction);
-        Set.Prototype = vm.Function_prototype;
+        Set.Prototype = realm.Function_prototype;
         Set.Extensible = true;
         defineCall(Set, set);
         defineFinal(Set, "length", 1);

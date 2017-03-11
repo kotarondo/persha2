@@ -343,7 +343,7 @@ function JSON_stringify(thisValue, argumentsList) {
         }
     }
     if (Type(space) === TYPE_Number) {
-        var space = min(10, ToInteger(space));
+        var space = Math.min(10, ToInteger(space));
         var gap = "";
         for (var i = 0; i < space; i++) {
             gap = gap + " ";

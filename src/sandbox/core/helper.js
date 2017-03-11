@@ -33,14 +33,11 @@
 
 function assert(condition, info) {
     if (!condition) {
-        var err = new Error("NG: assert failed:", info)
-        debugger
-        throw err
+        var err = new Error("NG: assertion failed:", info);
+        debugger;
+        throw err;
     }
 }
-
-const MAX_VALUE = Number.MAX_VALUE;
-const MIN_VALUE = Number.MIN_VALUE;
 
 const empty = ({
     empty: true
@@ -78,26 +75,6 @@ function setIncluded(m, a) {
         return;
     }
     (a.indexOf(m) >= 0) || a.push(m);
-}
-
-function floor(x) {
-    return Math.floor(x);
-}
-
-function modulo(x, y) {
-    return x - y * floor(x / y);
-}
-
-function abs(x) {
-    return Math.abs(x);
-}
-
-function min(x, y) {
-    return Math.min(x, y);
-}
-
-function max(x, y) {
-    return Math.max(x, y);
 }
 
 function fromCharCode(x) {
@@ -146,14 +123,14 @@ function isHexDigitChar(c) {
 }
 
 function formatNumber(x, witdh) {
-    x = floor(x);
+    x = Math.floor(x);
     if (!(0 <= x)) {
         return "";
     }
     var buffer = [];
     while (witdh-- > 0) {
         buffer[witdh] = toDigitChar(x % 10);
-        x = floor(x / 10);
+        x = Math.floor(x / 10);
     }
     return join(buffer);
 }

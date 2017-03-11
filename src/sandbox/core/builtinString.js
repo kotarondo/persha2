@@ -42,7 +42,7 @@ function String_Call(thisValue, argumentsList) {
 function String_Construct(argumentsList) {
     var value = String_Call(null, argumentsList);
     var obj = VMObject(CLASSID_String);
-    obj.Prototype = vm.String_prototype;
+    obj.Prototype = realm.String_prototype;
     obj.Extensible = true;
     obj.PrimitiveValue = value;
     defineFinal(obj, "length", value.length);
@@ -108,7 +108,7 @@ function String_prototype_indexOf(thisValue, argumentsList) {
     var searchStr = ToString(searchString);
     var pos = ToInteger(position);
     var len = S.length;
-    var start = min(max(pos, 0), len);
+    var start = Math.min(Math.max(pos, 0), len);
     var searchLen = searchStr.length;
     for (var k = start; k + searchLen <= len; k++) {
         if (searchStr === S.substring(k, k + searchLen)) return k;
@@ -130,7 +130,7 @@ function String_prototype_lastIndexOf(thisValue, argumentsList) {
         var pos = ToInteger(numPos);
     }
     var len = S.length;
-    var start = min(max(pos, 0), len);
+    var start = Math.min(Math.max(pos, 0), len);
     var searchLen = searchStr.length;
     for (var k = start; k >= 0; k--) {
         if ((k + searchLen <= len) && searchStr === S.substring(k, k + searchLen)) return k;
@@ -338,16 +338,16 @@ function String_prototype_slice(thisValue, argumentsList) {
         var intEnd = ToInteger(end);
     }
     if (intStart < 0) {
-        var from = max(len + intStart, 0);
+        var from = Math.max(len + intStart, 0);
     } else {
-        var from = min(intStart, len);
+        var from = Math.min(intStart, len);
     }
     if (intEnd < 0) {
-        var to = max(len + intEnd, 0);
+        var to = Math.max(len + intEnd, 0);
     } else {
-        var to = min(intEnd, len);
+        var to = Math.min(intEnd, len);
     }
-    var span = max(to - from, 0);
+    var span = Math.max(to - from, 0);
     return S.substring(from, from + span);
 }
 
@@ -436,10 +436,10 @@ function String_prototype_substring(thisValue, argumentsList) {
     } else {
         var intEnd = ToInteger(end);
     }
-    var finalStart = min(max(intStart, 0), len);
-    var finalEnd = min(max(intEnd, 0), len);
-    var from = min(finalStart, finalEnd);
-    var to = max(finalStart, finalEnd);
+    var finalStart = Math.min(Math.max(intStart, 0), len);
+    var finalEnd = Math.min(Math.max(intEnd, 0), len);
+    var from = Math.min(finalStart, finalEnd);
+    var to = Math.max(finalStart, finalEnd);
     return S.substring(from, to);
 }
 
@@ -498,9 +498,9 @@ function String_prototype_substr(thisValue, argumentsList) {
     if (Result2 >= 0) {
         var Result5 = Result2;
     } else {
-        var Result5 = max(Result4 + Result2, 0);
+        var Result5 = Math.max(Result4 + Result2, 0);
     }
-    var Result6 = min(max(Result3, 0), Result4 - Result5);
+    var Result6 = Math.min(Math.max(Result3, 0), Result4 - Result5);
     if (Result6 <= 0) return "";
     return Result1.substring(Result5, Result5 + Result6);
 }

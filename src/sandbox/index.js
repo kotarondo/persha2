@@ -31,90 +31,34 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-
-const filenames = ["helper.js", "type_constants.js", "import_export.js", "snapshot.js", "unicode.js", "regexp_compiler.js", "compiler.js", "builtinArray.js", "builtinBoolean.js", "builtinBuffer.js", "builtinDate.js", "builtinError.js", "builtinFunction.js", "builtinGlobal.js", "builtinJSON.js", "builtinMath.js", "builtinNumber.js", "builtinObject.js", "builtinRegExp.js", "builtinString.js", "conversion.js", "expression.js", "function.js", "statement.js", "program.js", "parser.js", "intrinsic.js", "execution.js", "types.js", "vm.js"];
-
-var context = vm.createContext({
-    Buffer: Buffer,
-    console: console,
-});
-
-for (var filename of filenames) {
-    var code = fs.readFileSync(path.join(__dirname, filename)).toString()
-    vm.runInContext(code, context, {
-        filename: filename,
-        displayErrors: true,
-    });
-}
-
-function createObj(Class, arg1, arg2, arg3) {
-    switch (Class) {
-        case 'Buffer':
-            return new Buffer(arg1);
-        case 'Date':
-            return new Date(arg1);
-        case 'Error':
-            switch (arg1) {
-                case 'TypeError':
-                    var e = new TypeError(arg2);
-                    break;
-                case 'ReferenceError':
-                    var e = new ReferenceError(arg2);
-                    break;
-                case 'RangeError':
-                    var e = new RangeError(arg2);
-                    break;
-                case 'SyntaxError':
-                    var e = new SyntaxError(arg2);
-                    break;
-                default:
-                    var e = new Error(arg2);
-                    break;
-            }
-            e.stack = arg3;
-            return e;
-        case 'Array':
-            return new Array(arg1);
-    }
-    return {};
-}
-
-function classofObj(obj) {
-    if (Array.isArray(obj)) return 'Array';
-    if (Buffer.isBuffer(obj)) return 'Buffer';
-    if (obj instanceof Date) return 'Date';
-    if (obj instanceof Error) return 'Error';
-    if (obj instanceof Function) return 'Function';
-    return 'Object';
-}
+var ie = require("./import_export");
+//var context = require("./context");
+var context = require("./optimized_context");
 
 function Sandbox() {
-    var vm;
+    var realm;
 
-    this.initializeVM = function() {
-        context.initializeVM();
-        vm = context.vm;
+    this.initializeRealm = function() {
+        context.initializeRealm();
+        realm = context.getRealm();
     }
 
     this.writeSnapshot = function(ostream) {
-        context.vm = vm;
+        context.setRealm(realm);
         context.writeSnapshot(ostream);
     }
 
     this.readSnapshot = function(istream) {
         context.readSnapshot(istream);
-        vm = context.vm;
+        realm = context.getRealm();
     }
 
     this.evaluateProgram = function(text, filename) {
-        context.vm = vm;
+        context.setRealm(realm);
         var result = context.evaluateProgram(text, filename);
-        result.value = context.exportValue(result.value, createObj);
+        result.value = context.exportValue(result.value, ie.createObj);
         return result;
     }
 }
 
-module.exports = Sandbox
+module.exports = Sandbox;

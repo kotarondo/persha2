@@ -340,25 +340,25 @@ function Global_setSystemProperty(thisValue, argumentsList) {
     var name = ToString(argumentsList[0]);
     var value = argumentsList[1];
     if (name === "stackDepthLimit") {
-        vm.stackDepthLimit = ToUint32(value);
+        realm.stackDepthLimit = ToUint32(value);
     }
     if (name === "LocalTZA") {
-        vm.LocalTZA = ToInteger(value);
+        realm.LocalTZA = ToInteger(value);
     }
     if (name === "LocalTZAString") {
-        vm.LocalTZAString = ToString(value);
+        realm.LocalTZAString = ToString(value);
     }
 }
 
 function Global_getSystemProperty(thisValue, argumentsList) {
     var name = ToString(argumentsList[0]);
     if (name === "stackDepthLimit") {
-        return vm.stackDepthLimit;
+        return realm.stackDepthLimit;
     }
     if (name === "LocalTZA") {
-        return vm.LocalTZA;
+        return realm.LocalTZA;
     }
     if (name === "LocalTZAString") {
-        return vm.LocalTZAString;
+        return realm.LocalTZAString;
     }
 }

@@ -235,7 +235,7 @@ function FunctionCall(expression, args, strict) {
             var thisValue = COMPILER_UNDEFINED_VALUE;
         }
         if (ref.name === '"eval"' && ref.types === COMPILER_IDENTIFIER_REFERENCE_TYPE) {
-            ctx.text("if(" + func.name + " ===vm.theEvalFunction)");
+            ctx.text("if(" + func.name + " ===realm.theEvalFunction)");
             var mval = ctx.defineValue("Global_eval(" + thisValue.name + "," + argList.name + ",true," + strict +
                 ",LexicalEnvironment,VariableEnvironment,ThisBinding)");
             ctx.text("else");

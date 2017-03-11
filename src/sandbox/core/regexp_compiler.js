@@ -160,7 +160,7 @@ RegExpCompilerContext.prototype.quote = function(x) {
             }
             return '"' + x + '"';
         case "number":
-            if (floor(x) === x && abs(x) < 1000000000) {
+            if (Math.floor(x) === x && Math.abs(x) < 1000000000) {
                 if (x >= 0) return String(x);
                 else return "(" + String(x) + ")";
             }

@@ -77,7 +77,7 @@ function doTest(test) {
     source = decodeURIComponent(escape(source)) // UTF-8 decoding trick
     try {
         var sandbox = new Sandbox()
-        sandbox.initializeVM()
+        sandbox.initializeRealm()
         var result = sandbox.evaluateProgram(sta_source, "sta.js")
         var result = sandbox.evaluateProgram(sta_patch_source, "sta_patch.js")
         var result = sandbox.evaluateProgram(source, test.path)

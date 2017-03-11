@@ -83,7 +83,7 @@ function Buffer_Construct(argumentsList) {
         throw VMTypeError();
     }
     var obj = VMObject(CLASSID_Buffer);
-    obj.Prototype = vm.Buffer_prototype;
+    obj.Prototype = realm.Buffer_prototype;
     obj.Extensible = true;
     obj.wrappedBuffer = buf;
     defineFinal(obj, "length", buf.length);
@@ -142,7 +142,7 @@ function Buffer_concat(thisValue, argumentsList) {
         redirectException(e);
     }
     var obj = VMObject(CLASSID_Buffer);
-    obj.Prototype = vm.Buffer_prototype;
+    obj.Prototype = realm.Buffer_prototype;
     obj.Extensible = true;
     obj.wrappedBuffer = buf;
     defineFinal(obj, "length", buf.length);
@@ -347,7 +347,7 @@ function Buffer_prototype_slice(thisValue, argumentsList) {
         redirectException(e);
     }
     var obj = VMObject(CLASSID_Buffer);
-    obj.Prototype = vm.Buffer_prototype;
+    obj.Prototype = realm.Buffer_prototype;
     obj.Extensible = true;
     obj.wrappedBuffer = buf;
     defineFinal(obj, "length", buf.length);

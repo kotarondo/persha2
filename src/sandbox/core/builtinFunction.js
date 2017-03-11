@@ -67,7 +67,7 @@ function Function_Construct(argumentsList) {
         }
         throw e;
     }
-    return CreateFunction(code, vm.theGlobalEnvironment);
+    return CreateFunction(code, realm.theGlobalEnvironment);
 }
 
 function Function_prototype_toString(thisValue, argumentsList) {
@@ -155,15 +155,15 @@ function Function_prototype_bind(thisValue, argumentsList) {
     F.TargetFunction = Target;
     F.BoundThis = thisArg;
     F.BoundArgs = A;
-    F.Prototype = vm.Function_prototype;
+    F.Prototype = realm.Function_prototype;
     if (Target.Class === "Function") {
         var L = Target.Get("length") - A.length;
-        defineFinal(F, "length", max(0, L));
+        defineFinal(F, "length", Math.max(0, L));
     } else {
         defineFinal(F, "length", 0);
     }
     F.Extensible = true;
-    var thrower = vm.theThrowTypeError;
+    var thrower = realm.theThrowTypeError;
     F.DefineOwnProperty("caller", AccessorPropertyDescriptor(thrower, thrower, false, false), false);
     F.DefineOwnProperty("arguments", AccessorPropertyDescriptor(thrower, thrower, false, false), false);
     return F;

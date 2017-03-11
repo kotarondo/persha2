@@ -194,7 +194,7 @@ function NewObjectEnvironment(O, E) {
     return obj;
 }
 
-var vm;
+var realm;
 var LexicalEnvironment;
 var VariableEnvironment;
 var ThisBinding;
@@ -205,7 +205,7 @@ var outerExecutionContext;
 var stackDepth = 0;
 
 function saveExecutionContext() {
-    if (stackDepth >= vm.stackDepthLimit) {
+    if (stackDepth >= realm.stackDepthLimit) {
         throw VMRangeError("stack overflow");
     }
     stackDepth++;
@@ -227,7 +227,7 @@ function exitExecutionContext() {
 }
 
 function getStackTrace() {
-    var stackTraceLimit = vm.Error.Get('stackTraceLimit');
+    var stackTraceLimit = realm.Error.Get('stackTraceLimit');
     if (Type(stackTraceLimit) !== TYPE_Number) {
         stackTraceLimit = 10;
     }
@@ -259,9 +259,9 @@ function getStackTrace() {
 
 function enterExecutionContextForGlobalCode(code) {
     saveExecutionContext();
-    LexicalEnvironment = vm.theGlobalEnvironment;
-    VariableEnvironment = vm.theGlobalEnvironment;
-    ThisBinding = vm.theGlobalObject;
+    LexicalEnvironment = realm.theGlobalEnvironment;
+    VariableEnvironment = realm.theGlobalEnvironment;
+    ThisBinding = realm.theGlobalObject;
     runningFunction = undefined;
     runningCode = code;
     runningSourcePos = 0;
@@ -275,9 +275,9 @@ function enterExecutionContextForEvalCode(code, direct, lexEnv, varEnv, thisB) {
         VariableEnvironment = varEnv;
         ThisBinding = thisB;
     } else {
-        LexicalEnvironment = vm.theGlobalEnvironment;
-        VariableEnvironment = vm.theGlobalEnvironment;
-        ThisBinding = vm.theGlobalObject;
+        LexicalEnvironment = realm.theGlobalEnvironment;
+        VariableEnvironment = realm.theGlobalEnvironment;
+        ThisBinding = realm.theGlobalObject;
     }
     if (code.strict) {
         var strictVarEnv = NewDeclarativeEnvironment(LexicalEnvironment);
@@ -310,8 +310,8 @@ function DeclarationBindingInstantiation(code) {
         var funcAlreadyDeclared = env.HasBinding(fn);
         if (funcAlreadyDeclared === false) {
             env.CreateMutableBinding(fn, configurableBindings);
-        } else if (env === vm.theGlobalEnvironment.envRec) {
-            var go = vm.theGlobalObject;
+        } else if (env === realm.theGlobalEnvironment.envRec) {
+            var go = realm.theGlobalObject;
             var existingProp = go.GetProperty(fn);
             if (existingProp.Configurable === true) {
                 go.DefineOwnProperty(fn, DataPropertyDescriptor(undefined, true, true, configurableBindings), true);
@@ -391,7 +391,7 @@ function CreateArgumentsObject(env, func, args) {
     } else {
         var obj = VMObject(CLASSID_Arguments);
     }
-    obj.Prototype = vm.Object_prototype;
+    obj.Prototype = realm.Object_prototype;
     obj.Extensible = true;
     define(obj, "length", len);
     var map = [];
@@ -416,7 +416,7 @@ function CreateArgumentsObject(env, func, args) {
     if (strict === false) {
         define(obj, "callee", func);
     } else {
-        var thrower = vm.theThrowTypeError;
+        var thrower = realm.theThrowTypeError;
         intrinsic_createAccessor(obj, "caller", thrower, thrower, false, false);
         intrinsic_createAccessor(obj, "callee", thrower, thrower, false, false);
     }
@@ -499,7 +499,7 @@ function Arguments_Delete(P, Throw) {
 }
 
 function Global_FastGetBindingValue(N, S) {
-    var bindings = vm.theGlobalObject;
+    var bindings = realm.theGlobalObject;
     var desc = bindings.$properties[N];
     if (desc === undefined) {
         var proto = bindings.Prototype;

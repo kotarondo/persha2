@@ -64,7 +64,7 @@ function FunctionExpression(staticEnv, body) {
 
 function CreateFunction(body, Scope) {
     var F = VMObject(CLASSID_Function);
-    F.Prototype = vm.Function_prototype;
+    F.Prototype = realm.Function_prototype;
     F.Scope = Scope;
     F.Code = body;
     F.Extensible = true;
@@ -74,7 +74,7 @@ function CreateFunction(body, Scope) {
     proto.DefineOwnProperty("constructor", DataPropertyDescriptor(F, true, false, true), false);
     F.DefineOwnProperty("prototype", DataPropertyDescriptor(proto, true, false, false), false);
     if (body.strict) {
-        var thrower = vm.theThrowTypeError;
+        var thrower = realm.theThrowTypeError;
         F.DefineOwnProperty("caller", AccessorPropertyDescriptor(thrower, thrower, false, false), false);
         F.DefineOwnProperty("arguments", AccessorPropertyDescriptor(thrower, thrower, false, false), false);
     }
@@ -107,7 +107,7 @@ function Function_ClassCall(thisValue, argumentsList) {
     if (code.strict) {
         var ThisBinding = thisValue;
     } else if (thisValue === null || thisValue === undefined) {
-        var ThisBinding = vm.theGlobalObject;
+        var ThisBinding = realm.theGlobalObject;
     } else if (typeof(thisValue) !== 'object') {
         var ThisBinding = ToObject(thisValue);
     } else {
@@ -131,7 +131,7 @@ function Function_ClassConstruct(argumentsList) {
     if (typeof(proto) === "object" && proto !== null) {
         obj.Prototype = proto;
     } else {
-        obj.Prototype = vm.Object_prototype;
+        obj.Prototype = realm.Object_prototype;
     }
     var result = F.Call(obj, argumentsList);
     if (typeof(result) === 'object' && result !== null) return result;
@@ -144,7 +144,7 @@ function ThrowTypeError() {
 
 function createThrowTypeErrorObject() {
     var F = VMObject(CLASSID_BuiltinFunction);
-    F.Prototype = vm.Function_prototype;
+    F.Prototype = realm.Function_prototype;
     defineCall(F, ThrowTypeError);
     defineFinal(F, "length", 0);
     F.Extensible = false;

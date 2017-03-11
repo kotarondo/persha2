@@ -1088,7 +1088,7 @@ const RegExpFactory = (function() {
 
     function createRegExpObject(regexp) {
         var obj = VMObject(CLASSID_RegExp);
-        obj.Prototype = vm.RegExp_prototype;
+        obj.Prototype = realm.RegExp_prototype;
         obj.Extensible = true;
         defineFinal(obj, "source", regexp.source);
         defineFinal(obj, "global", regexp.global);
@@ -1154,7 +1154,7 @@ function RegExp_Construct(argumentsList) {
     if (Type(R) === TYPE_Object && R.Class === "RegExp") {
         if (flags !== undefined) throw VMTypeError();
         var obj = VMObject(CLASSID_RegExp);
-        obj.Prototype = vm.RegExp_prototype;
+        obj.Prototype = realm.RegExp_prototype;
         obj.Extensible = true;
         defineFinal(obj, "source", R.Get("source"));
         defineFinal(obj, "global", R.Get("global"));

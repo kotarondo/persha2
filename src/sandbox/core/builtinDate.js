@@ -33,8 +33,12 @@
 
 // ECMAScript 5.1: 15.9 Date Objects
 
+function modulo(x, y) {
+    return x - y * Math.floor(x / y);
+}
+
 function Day(t) {
-    return floor(t / msPerDay);
+    return Math.floor(t / msPerDay);
 }
 
 const msPerDay = 86400000;
@@ -51,7 +55,7 @@ function DaysInYear(y) {
 }
 
 function DayFromYear(y) {
-    return 365 * (y - 1970) + floor((y - 1969) / 4) - floor((y - 1901) / 100) + floor((y - 1601) / 400);
+    return 365 * (y - 1970) + Math.floor((y - 1969) / 4) - Math.floor((y - 1901) / 100) + Math.floor((y - 1601) / 400);
 }
 
 function TimeFromYear(y) {
@@ -59,7 +63,7 @@ function TimeFromYear(y) {
 }
 
 function YearFromTime(t) {
-    var y = floor(Day(t) / 365.2425);
+    var y = Math.floor(Day(t) / 365.2425);
     if (TimeFromYear(y) <= t) {
         while (TimeFromYear(y + 1) <= t) {
             y = y + 1;
@@ -124,23 +128,23 @@ function DaylightSavingTA(t) {
 }
 
 function LocalTime(t) {
-    return t + vm.LocalTZA + DaylightSavingTA(t);
+    return t + realm.LocalTZA + DaylightSavingTA(t);
 }
 
 function UTC(t) {
-    return t - vm.LocalTZA - DaylightSavingTA(t - vm.LocalTZA);
+    return t - realm.LocalTZA - DaylightSavingTA(t - realm.LocalTZA);
 }
 
 function HourFromTime(t) {
-    return modulo(floor(t / msPerHour), HoursPerDay);
+    return modulo(Math.floor(t / msPerHour), HoursPerDay);
 }
 
 function MinFromTime(t) {
-    return modulo(floor(t / msPerMinute), MinutesPerHour);
+    return modulo(Math.floor(t / msPerMinute), MinutesPerHour);
 }
 
 function SecFromTime(t) {
-    return modulo(floor(t / msPerSecond), SecondsPerMinute);
+    return modulo(Math.floor(t / msPerSecond), SecondsPerMinute);
 }
 
 function msFromTime(t) {
@@ -169,7 +173,7 @@ function MakeDay(year, month, date) {
     var y = ToInteger(year);
     var m = ToInteger(month);
     var dt = ToInteger(date);
-    var ym = y + floor(m / 12);
+    var ym = y + Math.floor(m / 12);
     var mn = modulo(m, 12);
     var t = TimeFromYear(ym);
     if (mn === 1) {
@@ -216,7 +220,7 @@ function MakeDate(day, time) {
 
 function TimeClip(time) {
     if (!isFinite(time)) return NaN;
-    if (abs(time) > 8.64e15) return NaN;
+    if (Math.abs(time) > 8.64e15) return NaN;
     return ToInteger(time);
 }
 
@@ -255,7 +259,7 @@ function Date_Construct(argumentsList) {
         var seconds = argumentsList[5];
         var ms = argumentsList[6];
         var obj = VMObject(CLASSID_Date);
-        obj.Prototype = vm.Date_prototype;
+        obj.Prototype = realm.Date_prototype;
         obj.Extensible = true;
         var y = ToNumber(year);
         var m = ToNumber(month);
@@ -296,7 +300,7 @@ function Date_Construct(argumentsList) {
     if (argumentsList.length === 1) {
         var value = argumentsList[0];
         var obj = VMObject(CLASSID_Date);
-        obj.Prototype = vm.Date_prototype;
+        obj.Prototype = realm.Date_prototype;
         obj.Extensible = true;
         var v = ToPrimitive(value);
         if (Type(v) === TYPE_String) {
@@ -308,7 +312,7 @@ function Date_Construct(argumentsList) {
         return obj;
     }
     var obj = VMObject(CLASSID_Date);
-    obj.Prototype = vm.Date_prototype;
+    obj.Prototype = realm.Date_prototype;
     obj.Extensible = true;
     obj.PrimitiveValue = Date_now();
     return obj;
@@ -371,7 +375,7 @@ function Date_prototype_toString(thisValue, argumentsList) {
     var thisTimeValue = Date_prototype_valueOf(thisValue);
     var t = LocalTime(thisTimeValue);
     if (isFinite(t) === false) return "Invalid Date";
-    return toISODateString(t) + " " + toISOTimeString(t) + " " + vm.LocalTZAString;
+    return toISODateString(t) + " " + toISOTimeString(t) + " " + realm.LocalTZAString;
 }
 
 function Date_prototype_toDateString(thisValue, argumentsList) {

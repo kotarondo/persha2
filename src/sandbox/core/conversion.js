@@ -148,8 +148,8 @@ function ToInteger(input) {
     var number = ToNumber(input);
     if (isNaN(number)) return 0;
     if (number === 0) return number;
-    if (number < 0) return -floor(-number);
-    return floor(number);
+    if (number < 0) return -Math.floor(-number);
+    return Math.floor(number);
 }
 
 function ToInt32(input) {
@@ -243,12 +243,12 @@ function SameValue(x, y) {
 function ToArrayIndex(P) {
     if (typeof P === "string") {
         var x = +(P);
-        if (0 <= x && x <= 0xfffffffe && floor(x) === x && String(x) === P) {
+        if (0 <= x && x <= 0xfffffffe && Math.floor(x) === x && String(x) === P) {
             return x;
         }
         return -1;
     }
-    if (0 <= P && P <= 0xfffffffe && floor(P) === P) {
+    if (0 <= P && P <= 0xfffffffe && Math.floor(P) === P) {
         return P;
     }
     return -1;

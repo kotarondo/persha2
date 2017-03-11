@@ -31,48 +31,31 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-function createObj(Class, arg1, arg2, arg3) {
-    switch (Class) {
-        case 'Buffer':
-            return new Buffer(arg1);
-        case 'Date':
-            return new Date(arg1);
-        case 'Error':
-            switch (arg1) {
-                case 'TypeError':
-                    var e = new TypeError(arg2);
-                    break;
-                case 'ReferenceError':
-                    var e = new ReferenceError(arg2);
-                    break;
-                case 'RangeError':
-                    var e = new RangeError(arg2);
-                    break;
-                case 'SyntaxError':
-                    var e = new SyntaxError(arg2);
-                    break;
-                default:
-                    var e = new Error(arg2);
-                    break;
-            }
-            e.stack = arg3;
-            return e;
-        case 'Array':
-            return new Array(arg1);
-    }
-    return {};
+var fs = require('fs');
+var path = require('path');
+var vm = require('vm');
+
+var filenames = ["helper.js", "type_constants.js", "import_export.js", "snapshot.js", "unicode.js", "regexp_compiler.js", "compiler.js", "builtinArray.js", "builtinBoolean.js", "builtinBuffer.js", "builtinDate.js", "builtinError.js", "builtinFunction.js", "builtinGlobal.js", "builtinJSON.js", "builtinMath.js", "builtinNumber.js", "builtinObject.js", "builtinRegExp.js", "builtinString.js", "conversion.js", "expression.js", "function.js", "statement.js", "program.js", "parser.js", "intrinsic.js", "execution.js", "types.js", "realm.js"];
+
+var context = vm.createContext({
+    Buffer: Buffer,
+    console: console,
+});
+
+for (var filename of filenames) {
+    var code = fs.readFileSync(path.join(__dirname, "core", filename)).toString()
+    vm.runInContext(code, context, {
+        filename: filename,
+        displayErrors: true,
+    });
 }
 
-function classofObj(obj) {
-    if (Array.isArray(obj)) return 'Array';
-    if (Buffer.isBuffer(obj)) return 'Buffer';
-    if (obj instanceof Date) return 'Date';
-    if (obj instanceof Error) return 'Error';
-    if (obj instanceof Function) return 'Function';
-    return 'Object';
-}
-
-module.exports = {
-    createObj: createObj,
-    classofObj: classofObj,
+context.getRealm = function() {
+    return this.realm;
 };
+
+context.setRealm = function(realm) {
+    this.realm = realm;
+};
+
+module.exports = context;

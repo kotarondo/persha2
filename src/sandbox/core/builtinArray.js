@@ -39,7 +39,7 @@ function Array_Call(thisValue, argumentsList) {
 
 function Array_Construct(argumentsList) {
     var obj = VMObject(CLASSID_Array);
-    obj.Prototype = vm.Array_prototype;
+    obj.Prototype = realm.Array_prototype;
     obj.Extensible = true;
     if (argumentsList.length !== 1) {
         defineWritable(obj, "length", argumentsList.length);
@@ -214,7 +214,7 @@ function Array_prototype_reverse(thisValue, argumentsList) {
     var O = ToObject(thisValue);
     var lenVal = O.Get("length");
     var len = ToUint32(lenVal);
-    var middle = floor(len / 2);
+    var middle = Math.floor(len / 2);
     var lower = 0;
     while (lower !== middle) {
         var upper = len - lower - 1;
@@ -275,9 +275,9 @@ function Array_prototype_slice(thisValue, argumentsList) {
     var len = ToUint32(lenVal);
     var relativeStart = ToInteger(start);
     if (relativeStart < 0) {
-        var k = max((len + relativeStart), 0);
+        var k = Math.max((len + relativeStart), 0);
     } else {
-        var k = min(relativeStart, len);
+        var k = Math.min(relativeStart, len);
     }
     if (end === undefined) {
         var relativeEnd = len;
@@ -285,9 +285,9 @@ function Array_prototype_slice(thisValue, argumentsList) {
         var relativeEnd = ToInteger(end);
     }
     if (relativeEnd < 0) {
-        var final = max((len + relativeEnd), 0);
+        var final = Math.max((len + relativeEnd), 0);
     } else {
-        var final = min(relativeEnd, len);
+        var final = Math.min(relativeEnd, len);
     }
     var n = 0;
     while (k < final) {
@@ -394,14 +394,14 @@ function Array_prototype_splice(thisValue, argumentsList) {
     var len = ToUint32(lenVal);
     var relativeStart = ToInteger(start);
     if (relativeStart < 0) {
-        var actualStart = max((len + relativeStart), 0);
+        var actualStart = Math.max((len + relativeStart), 0);
     } else {
-        var actualStart = min(relativeStart, len);
+        var actualStart = Math.min(relativeStart, len);
     }
     if (argumentsList.length === 1) {
         var actualDeleteCount = len - actualStart; // compatible with ECMA6
     } else {
-        var actualDeleteCount = min(max(ToInteger(deleteCount), 0), len - actualStart);
+        var actualDeleteCount = Math.min(Math.max(ToInteger(deleteCount), 0), len - actualStart);
     }
     var k = 0;
     while (k < actualDeleteCount) {
@@ -509,7 +509,7 @@ function Array_prototype_indexOf(thisValue, argumentsList) {
     if (n >= 0) {
         var k = n;
     } else {
-        var k = len - abs(n);
+        var k = len - Math.abs(n);
         if (k < 0) {
             var k = 0;
         }
@@ -539,9 +539,9 @@ function Array_prototype_lastIndexOf(thisValue, argumentsList) {
         var n = len - 1;
     }
     if (n >= 0) {
-        var k = min(n, len - 1);
+        var k = Math.min(n, len - 1);
     } else {
-        var k = len - abs(n);
+        var k = len - Math.abs(n);
     }
     while (k >= 0) {
         var kPresent = O.HasProperty(ToString(k));

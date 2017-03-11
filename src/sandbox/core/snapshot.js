@@ -133,8 +133,8 @@ function writeSnapshot(l_ostream) {
         assert(allObjs[obj.ID] === obj, obj);
     }
 
-    for (var name in vm) {
-        mark(vm[name]);
+    for (var name in realm) {
+        mark(realm[name]);
     }
 
     ostream.writeString("CLASSID");
@@ -159,9 +159,9 @@ function writeSnapshot(l_ostream) {
     }
     ostream.writeInt(0);
 
-    for (var name in vm) {
+    for (var name in realm) {
         ostream.writeString(name);
-        ostream.writeValue(vm[name]);
+        ostream.writeValue(realm[name]);
     }
     ostream.writeString("");
 
@@ -176,7 +176,7 @@ function writeSnapshot(l_ostream) {
 }
 
 function readSnapshot(l_istream) {
-    vm = null;
+    realm = null;
     var allObjs = [];
     allObjs.length = OBJID_BASE;
     var istream = SnapshotInputStream(l_istream, allObjs);
@@ -220,16 +220,16 @@ function readSnapshot(l_istream) {
     }
     istream.assert(istream.readInt() === 0);
 
-    vm = {};
+    realm = {};
     while (true) {
         var name = istream.readString();
         if (name === "") {
             break;
         }
-        vm[name] = istream.readValue();
+        realm[name] = istream.readValue();
     }
     istream.assert(istream.readString() === "FINISH");
-    istream.assert(checkVM());
+    istream.assert(checkRealm());
 
     //cleanup
     for (var i = OBJID_BASE; i < allObjs.length; i++) {

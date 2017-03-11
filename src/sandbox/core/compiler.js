@@ -243,7 +243,7 @@ CompilerContext.prototype.quote = function(x) {
             }
             return '"' + x + '"';
         case "number":
-            if (floor(x) === x && abs(x) < 1000000000) {
+            if (Math.floor(x) === x && Math.abs(x) < 1000000000) {
                 if (x >= 0) return String(x);
                 else return "(" + String(x) + ")";
             }
@@ -494,7 +494,7 @@ CompilerContext.prototype.compileGetIdentifierReferece = function(staticEnv, nam
             isSpecial: true,
         };
         else if (skip === 1) var base = this.constant("LexicalEnvironment.outer", types);
-        else if (env.type === "global") var base = this.constant("vm.theGlobalEnvironment", types);
+        else if (env.type === "global") var base = this.constant("realm.theGlobalEnvironment", types);
         else var base = this.define("SkipEnvironmentRecord(LexicalEnvironment," + skip + ")", types);
     } else {
         var base = this.define("GetIdentifierEnvironmentRecord(LexicalEnvironment," + skip + "," + qname + ")", types);
@@ -562,13 +562,13 @@ CompilerContext.prototype.compilePutValue = function(ref, val) {
             this.text(base.name + " .$values[" + ref.name + "]= " + val.name + ";");
             return;
         } else if (base.types === COMPILER_GLOBAL_ENV_TYPE) {
-            this.text("vm.theGlobalObject.Put(" + ref.name + "," + val.name + "," + ref.strict + ");");
+            this.text("realm.theGlobalObject.Put(" + ref.name + "," + val.name + "," + ref.strict + ");");
             return;
         }
         if (!base.types.isNotUndefined()) {
             this.text("if(" + base.name + " ===undefined)");
             if (ref.strict) this.text("throw VMReferenceError(" + ref.name + " +' is not defined');");
-            else this.text("vm.theGlobalObject.Put(" + ref.name + "," + val.name + ",false);");
+            else this.text("realm.theGlobalObject.Put(" + ref.name + "," + val.name + ",false);");
             this.text("else");
         }
         this.text(base.name + " .SetMutableBinding(" + ref.name + "," + val.name + "," + ref.strict + ");");
