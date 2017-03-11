@@ -179,7 +179,7 @@ function Decode(string, reservedSet) {
             var B = (mvDigitChar(string[k + 1]) << 4) + mvDigitChar(string[k + 2]);
             k += 2;
             if ((B & 0x80) === 0) {
-                var C = fromCharCode(B);
+                var C = charCode2String(B);
                 if (isIncluded(C, reservedSet) === false) {
                     var S = C;
                 } else {
@@ -205,7 +205,7 @@ function Decode(string, reservedSet) {
                 }
                 var V = UTF8decode(Octets);
                 if (V < 0x10000) {
-                    var C = fromCharCode(V);
+                    var C = charCode2String(V);
                     if (isIncluded(C, reservedSet) === false) {
                         var S = C;
                     } else {
@@ -214,7 +214,7 @@ function Decode(string, reservedSet) {
                 } else {
                     var L = (((V - 0x10000) & 0x3FF) + 0xDC00);
                     var H = ((((V - 0x10000) >> 10) & 0x3FF) + 0xD800);
-                    var S = fromCharCode(H) + fromCharCode(L);
+                    var S = charCode2String(H) + charCode2String(L);
                 }
             }
         }
@@ -323,11 +323,11 @@ function Global_unescape(thisValue, argumentsList) {
         if (c === '%') {
             if ((k <= Result2 - 6) && Result1[k + 1] === 'u' && isHexDigitChar(Result1[k + 2]) &&
                 isHexDigitChar(Result1[k + 3]) && isHexDigitChar(Result1[k + 4]) && isHexDigitChar(Result1[k + 5])) {
-                var c = fromCharCode((mvDigitChar(Result1[k + 2]) << 12) + (mvDigitChar(Result1[k + 3]) << 8) +
+                var c = charCode2String((mvDigitChar(Result1[k + 2]) << 12) + (mvDigitChar(Result1[k + 3]) << 8) +
                     (mvDigitChar(Result1[k + 4]) << 4) + mvDigitChar(Result1[k + 5]));
                 k += 5;
             } else if ((k <= Result2 - 3) && isHexDigitChar(Result1[k + 1]) && isHexDigitChar(Result1[k + 2])) {
-                var c = fromCharCode((mvDigitChar(Result1[k + 1]) << 4) + mvDigitChar(Result1[k + 2]));
+                var c = charCode2String((mvDigitChar(Result1[k + 1]) << 4) + mvDigitChar(Result1[k + 2]));
                 k += 2;
             }
         }

@@ -1523,7 +1523,7 @@ const Parser = (function() {
                             if (!isHexDigitChar(current)) throw SyntaxError();
                             x = (x << 4) + mvDigitChar(proceed());
                         }
-                        c = fromCharCode(x);
+                        c = charCode2String(x);
                         break;
                     case 'u':
                         var x = 0;
@@ -1531,7 +1531,7 @@ const Parser = (function() {
                             if (!isHexDigitChar(current)) throw SyntaxError();
                             x = (x << 4) + mvDigitChar(proceed());
                         }
-                        c = fromCharCode(x);
+                        c = charCode2String(x);
                         break;
                     case '0':
                     case '1':
@@ -1553,7 +1553,7 @@ const Parser = (function() {
                                 x = (x << 3) + mvDigitChar(proceed());
                             }
                         }
-                        c = fromCharCode(x);
+                        c = charCode2String(x);
                         break;
                     case '4':
                     case '5':
@@ -1565,7 +1565,7 @@ const Parser = (function() {
                         if (isOctalDigitChar(current)) {
                             x = (x << 3) + mvDigitChar(proceed());
                         }
-                        c = fromCharCode(x);
+                        c = charCode2String(x);
                         break;
                     case '8':
                     case '9':
@@ -1602,7 +1602,7 @@ const Parser = (function() {
                 if (!isHexDigitChar(current)) throw SyntaxError();
                 x = (x << 4) + mvDigitChar(proceed());
             }
-            var c = fromCharCode(x);
+            var c = charCode2String(x);
             if (!isIdentifierPart(c)) throw SyntaxError();
             return c;
         }

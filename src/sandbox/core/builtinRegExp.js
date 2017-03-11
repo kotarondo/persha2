@@ -728,7 +728,7 @@ const RegExpFactory = (function() {
                 var ch = proceed();
                 var i = toCharCode(ch);
                 var j = i % 32;
-                return fromCharCode(j);
+                return charCode2String(j);
             case 'x':
                 var x = 0;
                 for (var i = 0; i < 2; i++) {
@@ -738,7 +738,7 @@ const RegExpFactory = (function() {
                     x = (x << 4) + mvDigitChar(current);
                     proceed();
                 }
-                return fromCharCode(x);
+                return charCode2String(x);
             case 'u':
                 var x = 0;
                 for (var i = 0; i < 4; i++) {
@@ -748,7 +748,7 @@ const RegExpFactory = (function() {
                     x = (x << 4) + mvDigitChar(current);
                     proceed();
                 }
-                return fromCharCode(x);
+                return charCode2String(x);
             case '\u200d': // <ZWJ>
             case '\u200c': // <ZWNJ>
                 return c;
@@ -784,7 +784,7 @@ const RegExpFactory = (function() {
             x = x * 8 + mvDigitChar(current);
             proceed();
         }
-        return fromCharCode(x);
+        return charCode2String(x);
     }
 
     function evaluateCharacterClassEscape() {
@@ -906,7 +906,7 @@ const RegExpFactory = (function() {
         	}
         	else {
         		for (var k = i; k <= j; k++) {
-        			var ch = fromCharCode(k);
+					var ch = charCode2String(k);
         			if (Canonicalize(ch) === cc) return true;
         		}
         		return false;
@@ -921,7 +921,7 @@ const RegExpFactory = (function() {
             } else {
                 ctx.text("var r= false;");
                 ctx.text("for (var k = " + i + "; k <= " + j + "; k++) {");
-                ctx.text("var ch = fromCharCode(k);");
+                ctx.text("var ch = charCode2String(k);");
                 ctx.text("if (Canonicalize(ch) === cc) var r= true;");
                 ctx.text("}");
             }

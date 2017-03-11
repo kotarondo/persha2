@@ -156,7 +156,7 @@ const JSONParser = (function() {
                     x = (x << 4) + mvDigitChar(current);
                     proceed();
                 }
-                return fromCharCode(x);
+                return charCode2String(x);
         }
         throw SyntaxError();
     }

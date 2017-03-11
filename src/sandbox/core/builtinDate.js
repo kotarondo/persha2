@@ -131,7 +131,7 @@ function LocalTime(t) {
     return t + realm.LocalTZA + DaylightSavingTA(t);
 }
 
-function UTC(t) {
+function UTCTime(t) {
     return t - realm.LocalTZA - DaylightSavingTA(t - realm.LocalTZA);
 }
 
@@ -294,7 +294,7 @@ function Date_Construct(argumentsList) {
             var yr = y;
         }
         var finalDate = MakeDate(MakeDay(yr, m, dt), MakeTime(h, min, s, milli));
-        obj.PrimitiveValue = TimeClip(UTC(finalDate));
+        obj.PrimitiveValue = TimeClip(UTCTime(finalDate));
         return obj;
     }
     if (argumentsList.length === 1) {
@@ -546,7 +546,7 @@ function Date_prototype_setMilliseconds(thisValue, argumentsList) {
     var thisTimeValue = Date_prototype_valueOf(thisValue);
     var t = LocalTime(thisTimeValue);
     var time = MakeTime(HourFromTime(t), MinFromTime(t), SecFromTime(t), ToNumber(ms));
-    var u = TimeClip(UTC(MakeDate(Day(t), time)));
+    var u = TimeClip(UTCTime(MakeDate(Day(t), time)));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -573,7 +573,7 @@ function Date_prototype_setSeconds(thisValue, argumentsList) {
         var milli = ToNumber(ms);
     }
     var date = MakeDate(Day(t), MakeTime(HourFromTime(t), MinFromTime(t), s, milli));
-    var u = TimeClip(UTC(date));
+    var u = TimeClip(UTCTime(date));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -613,7 +613,7 @@ function Date_prototype_setMinutes(thisValue, argumentsList) {
         var milli = ToNumber(ms);
     }
     var date = MakeDate(Day(t), MakeTime(HourFromTime(t), m, s, milli));
-    var u = TimeClip(UTC(date));
+    var u = TimeClip(UTCTime(date));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -665,7 +665,7 @@ function Date_prototype_setHours(thisValue, argumentsList) {
         var milli = ToNumber(ms);
     }
     var date = MakeDate(Day(t), MakeTime(h, m, s, milli));
-    var u = TimeClip(UTC(date));
+    var u = TimeClip(UTCTime(date));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -705,7 +705,7 @@ function Date_prototype_setDate(thisValue, argumentsList) {
     var t = LocalTime(thisTimeValue);
     var dt = ToNumber(date);
     var newDate = MakeDate(MakeDay(YearFromTime(t), MonthFromTime(t), dt), TimeWithinDay(t));
-    var u = TimeClip(UTC(newDate));
+    var u = TimeClip(UTCTime(newDate));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -733,7 +733,7 @@ function Date_prototype_setMonth(thisValue, argumentsList) {
         var dt = ToNumber(date);
     }
     var newDate = MakeDate(MakeDay(YearFromTime(t), m, dt), TimeWithinDay(t));
-    var u = TimeClip(UTC(newDate));
+    var u = TimeClip(UTCTime(newDate));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -777,7 +777,7 @@ function Date_prototype_setFullYear(thisValue, argumentsList) {
         var dt = ToNumber(date);
     }
     var newDate = MakeDate(MakeDay(y, m, dt), TimeWithinDay(t));
-    var u = TimeClip(UTC(newDate));
+    var u = TimeClip(UTCTime(newDate));
     thisValue.PrimitiveValue = u;
     return u;
 }
@@ -858,7 +858,7 @@ function Date_prototype_setYear(thisValue, argumentsList) {
         var Result4 = Result2;
     }
     var Result5 = MakeDay(Result4, MonthFromTime(t), DateFromTime(t));
-    var Result6 = UTC(MakeDate(Result5, TimeWithinDay(t)));
+    var Result6 = UTCTime(MakeDate(Result5, TimeWithinDay(t)));
     thisValue.PrimitiveValue = TimeClip(Result6);
     return thisValue.PrimitiveValue;
 }

@@ -38,12 +38,12 @@ var vm = require('vm');
 var filenames = ["helper.js", "type_constants.js", "import_export.js", "snapshot.js", "unicode.js", "regexp_compiler.js", "compiler.js", "builtinArray.js", "builtinBoolean.js", "builtinBuffer.js", "builtinDate.js", "builtinError.js", "builtinFunction.js", "builtinGlobal.js", "builtinJSON.js", "builtinMath.js", "builtinNumber.js", "builtinObject.js", "builtinRegExp.js", "builtinString.js", "conversion.js", "expression.js", "function.js", "statement.js", "program.js", "parser.js", "intrinsic.js", "execution.js", "types.js", "realm.js"];
 
 var prefix = "_persha2sb";
-var map = {};
+var map = Object.create(null);
 var index = 100;
 
 function registerName(name) {
-    if (map[name]) {
-        var err = new Error("NG: name collision:", name);
+    if (/\W/.test(name) || map[name]) {
+        var err = new Error("NG: invalid name:", name);
         debugger;
         throw err;
     }
@@ -56,32 +56,48 @@ var constants = [];
 var variables = [];
 
 for (var filename of filenames) {
-    var code = fs.readFileSync(path.join(__dirname, "core", filename)).toString()
-    code = code.split(/\b/);
-    //TODO collect global names
-    codes.push(code);
-}
-
-for (var code of codes) {
-    for (var name in map) {
-        //TODO rename codes
-    }
-    vm.runInThisContext(code.join(''), {
+    var text = fs.readFileSync(path.join(__dirname, "core", filename)).toString();
+    var split = text.split(/\b|(?=\n)/);
+    split.forEach(function(e, i) {
+        if (e !== '\n') return;
+        var head = split[i + 1];
+        var name = split[i + 3];
+        if (head === 'function') {
+            functions.push(name);
+            registerName(name);
+            return;
+        }
+        if (head === 'const') {
+            constants.push(name);
+            registerName(name);
+            return;
+        }
+        if (head === 'var') {
+            variables.push(name);
+            registerName(name);
+            return;
+        }
+    });
+    codes.push({
         filename: filename,
-        displayErrors: true,
+        text: text,
+        split: split,
     });
 }
 
-// for tests
-
-map.initializeRealm = "initializeRealm";
-functions.push("initializeRealm");
-
-map.evaluateProgram = "evaluateProgram";
-functions.push("evaluateProgram");
-
-map.exportValue = "exportValue";
-functions.push("exportValue");
+for (var code of codes) {
+    code.split.forEach(function(e, i, a) {
+        var n = map[e];
+        if (n) {
+            a[i] = n;
+        }
+    });
+    var text = code.split.join('');
+    vm.runInThisContext(text, {
+        filename: code.filename,
+        displayErrors: true,
+    });
+}
 
 var context = {};
 for (var name of functions) {

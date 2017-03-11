@@ -52,7 +52,7 @@ function String_Construct(argumentsList) {
 function String_fromCharCode(thisValue, argumentsList) {
     var buffer = [];
     for (var i = 0; i < argumentsList.length; i++) {
-        buffer.push(fromCharCode(ToUint16(argumentsList[i])));
+        buffer.push(charCode2String(ToUint16(argumentsList[i])));
     }
     var S = buffer.join('');
     return S;

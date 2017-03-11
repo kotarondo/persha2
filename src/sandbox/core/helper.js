@@ -40,15 +40,15 @@ function assert(condition, info) {
 }
 
 const empty = ({
-    empty: true
+    empty_: true
 });
 
 const absent = ({
-    absent: true
+    absent_: true
 });
 
 const failure = ({
-    failure: true
+    failure_: true
 });
 
 function arraycopy(a) {
@@ -73,7 +73,7 @@ function setIncluded(m, a) {
     (a.indexOf(m) >= 0) || a.push(m);
 }
 
-function fromCharCode(x) {
+function charCode2String(x) {
     return String.fromCharCode(x);
 }
 
@@ -91,14 +91,14 @@ function mvDigitChar(c) {
 }
 
 function toDigitChar(x) {
-    if ((0 <= x) && (x <= 9)) return fromCharCode(x + 0x30);
-    if ((10 <= x) && (x <= 35)) return fromCharCode(x + (0x61 - 10)); // 'a' - 'z'
+    if ((0 <= x) && (x <= 9)) return charCode2String(x + 0x30);
+    if ((10 <= x) && (x <= 35)) return charCode2String(x + (0x61 - 10)); // 'a' - 'z'
     assert(false, x);
 }
 
 function toUpperDigitChar(x) {
-    if ((0 <= x) && (x <= 9)) return fromCharCode(x + 0x30);
-    if ((10 <= x) && (x <= 35)) return fromCharCode(x + (0x41 - 10)); // 'A' - 'Z'
+    if ((0 <= x) && (x <= 9)) return charCode2String(x + 0x30);
+    if ((10 <= x) && (x <= 35)) return charCode2String(x + (0x41 - 10)); // 'A' - 'Z'
     assert(false, x);
 }
 
