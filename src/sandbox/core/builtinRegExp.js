@@ -93,12 +93,12 @@ const RegExpFactory = (function() {
         assert(NCapturingParens === leftCapturingParentheses);
         /* original code
         regexp.Match = function(str, index) {
-        	Input = str;
-        	InputLength = Input.length;
-        	IgnoreCase = regexp.ignoreCase; // executing time
-        	Multiline = regexp.multiline; // executing time
-        	var x = State(index, []);
-        	return unpending(m(x, noContinuation));
+            Input = str;
+            InputLength = Input.length;
+            IgnoreCase = regexp.ignoreCase; // executing time
+            Multiline = regexp.multiline; // executing time
+            var x = State(index, []);
+            return unpending(m(x, noContinuation));
         };
         */
         var ctx = new RegExpCompilerContext("Input, index");
@@ -130,9 +130,9 @@ const RegExpFactory = (function() {
         var m2 = evaluateDisjunction();
         /* original code
         return function(x, c) {
-        	var r = unpending(m1(x, c));
-        	if (r !== failure) return r;
-        	return m2(x, c);
+            var r = unpending(m1(x, c));
+            if (r !== failure) return r;
+            return m2(x, c);
         };
         */
         return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -146,24 +146,24 @@ const RegExpFactory = (function() {
 
     /* original code
     function evaluateAlternative() {
-    	function defaultMatcher(x, c) {
-    		return pending(c, x);
-    	}
-    	function concat(m1, m2) {
-    		return function(x, c) {
-    			var d = function(y) {
-    				return m2(y, c);
-    			};
-    			return m1(x, d);
-    		};
-    	}
-    	var m1 = defaultMatcher;
-    	while (true) {
-    		var m2 = evaluateTerm();
-    		if (m2 === undefined) break;
-    		var m1 = concat(m1, m2);
-    	}
-    	return m1;
+        function defaultMatcher(x, c) {
+            return pending(c, x);
+        }
+        function concat(m1, m2) {
+            return function(x, c) {
+                var d = function(y) {
+                    return m2(y, c);
+                };
+                return m1(x, d);
+            };
+        }
+        var m1 = defaultMatcher;
+        while (true) {
+            var m2 = evaluateTerm();
+            if (m2 === undefined) break;
+            var m1 = concat(m1, m2);
+        }
+        return m1;
     }
     */
 
@@ -198,9 +198,9 @@ const RegExpFactory = (function() {
         if (t !== undefined) {
             /* original code
             return function(x, c) {
-            	var r = t(x);
-            	if (r === false) return failure;
-            	return pending(c, x);
+                var r = t(x);
+                if (r === false) return failure;
+                return pending(c, x);
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -220,7 +220,7 @@ const RegExpFactory = (function() {
         var parenCount = leftCapturingParentheses - parenIndex;
         /* original code
         return function(x, c) {
-        	return RepeatMatcher(m, q.min, q.max, q.greedy, x, c, parenIndex, parenCount);
+            return RepeatMatcher(m, q.min, q.max, q.greedy, x, c, parenIndex, parenCount);
         };
         */
         return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -265,85 +265,85 @@ const RegExpFactory = (function() {
 
     /* original code
     function RepeatMatcher(m, min, max, greedy, x, c, parenIndex, parenCount) {
-    	if (max === 0) return pending(c, x);
-    	if (min === 0 && greedy === true) return RepeatMatcher0Greedy(m, max, x, c, parenIndex, parenCount);
-    	var d = function(y) {
-    		if (min === 0 && y.endIndex === x.endIndex) return failure;
-    		if (min === 0) {
-    			var min2 = 0;
-    		}
-    		else {
-    			var min2 = min - 1;
-    		}
-    		if (max === Infinity) {
-    			var max2 = Infinity;
-    		}
-    		else {
-    			var max2 = max - 1;
-    		}
-    		return RepeatMatcher(m, min2, max2, greedy, y, c, parenIndex, parenCount);
-    	};
-    	var cap = arraycopy(x.captures);
-    	for (var k = parenIndex + 1; k <= parenIndex + parenCount; k++) {
-    		cap[k] = undefined;
-    	}
-    	var e = x.endIndex;
-    	var xr = State(e, cap);
-    	if (min !== 0) return m(xr, d);
-    	if (greedy === false) {
-    		var z = unpending(c(x));
-    		if (z !== failure) return z;
-    		return m(xr, d);
-    	}
-    	var z = unpending(m(xr, d));
-    	if (z !== failure) return z;
-    	return pending(c, x);
+        if (max === 0) return pending(c, x);
+        if (min === 0 && greedy === true) return RepeatMatcher0Greedy(m, max, x, c, parenIndex, parenCount);
+        var d = function(y) {
+            if (min === 0 && y.endIndex === x.endIndex) return failure;
+            if (min === 0) {
+                var min2 = 0;
+            }
+            else {
+                var min2 = min - 1;
+            }
+            if (max === Infinity) {
+                var max2 = Infinity;
+            }
+            else {
+                var max2 = max - 1;
+            }
+            return RepeatMatcher(m, min2, max2, greedy, y, c, parenIndex, parenCount);
+        };
+        var cap = arraycopy(x.captures);
+        for (var k = parenIndex + 1; k <= parenIndex + parenCount; k++) {
+            cap[k] = undefined;
+        }
+        var e = x.endIndex;
+        var xr = State(e, cap);
+        if (min !== 0) return m(xr, d);
+        if (greedy === false) {
+            var z = unpending(c(x));
+            if (z !== failure) return z;
+            return m(xr, d);
+        }
+        var z = unpending(m(xr, d));
+        if (z !== failure) return z;
+        return pending(c, x);
     }
     */
 
     /* original code
     // optimized loop version
     function RepeatMatcher0Greedy(m, max, x, c, parenIndex, parenCount) {
-    	var stack = [];
-    	while (true) {
-    		if (max === 0) break;
-    		var d = function(y) {
-    			if (y.endIndex === x.endIndex) return failure;
-    			return RepeatMatcher0Greedy(m, max - 1, y, c, parenIndex, parenCount);
-    		};
-    		var cap = arraycopy(x.captures);
-    		for (var k = parenIndex + 1; k <= parenIndex + parenCount; k++) {
-    			cap[k] = undefined;
-    		}
-    		var e = x.endIndex;
-    		var xr = State(e, cap);
-    		var y = m(xr, d);
-    		if (y.pendingContinuation !== d) {
-    			var z = unpending(y);
-    			if (z !== failure) return z;
-    			break;
-    		}
-    		y.pendingContinuation = undefined;
-    		if (y.endIndex === x.endIndex) break;
-    		stack.push(x);
-    		x = y;
-    		max = max - 1;
-    	}
-    	while (stack.length > 0) {
-    		var z = unpending(c(x));
-    		if (z !== failure) return z;
-    		x = stack.pop();
-    	}
-    	return pending(c, x);
+        var stack = [];
+        while (true) {
+            if (max === 0) break;
+            var d = function(y) {
+                if (y.endIndex === x.endIndex) return failure;
+                return RepeatMatcher0Greedy(m, max - 1, y, c, parenIndex, parenCount);
+            };
+            var cap = arraycopy(x.captures);
+            for (var k = parenIndex + 1; k <= parenIndex + parenCount; k++) {
+                cap[k] = undefined;
+            }
+            var e = x.endIndex;
+            var xr = State(e, cap);
+            var y = m(xr, d);
+            if (y.pendingContinuation !== d) {
+                var z = unpending(y);
+                if (z !== failure) return z;
+                break;
+            }
+            y.pendingContinuation = undefined;
+            if (y.endIndex === x.endIndex) break;
+            stack.push(x);
+            x = y;
+            max = max - 1;
+        }
+        while (stack.length > 0) {
+            var z = unpending(c(x));
+            if (z !== failure) return z;
+            x = stack.pop();
+        }
+        return pending(c, x);
     }
     */
 
     /* original code
     function IsWordChar(e) {
-    	if (e === -1 || e === InputLength) return false;
-    	var c = Input[e];
-    	if (c === '_' || isDigitChar(c)) return true;
-    	return false;
+        if (e === -1 || e === InputLength) return false;
+        var c = Input[e];
+        if (c === '_' || isDigitChar(c)) return true;
+        return false;
     }
     */
 
@@ -352,11 +352,11 @@ const RegExpFactory = (function() {
             proceed();
             /* original code
             return function(x) {
-            	var e = x.endIndex;
-            	if (e === 0) return true;
-            	if (Multiline === false) return false;
-            	if (isLineTerminator(Input[e - 1])) return true;
-            	return false;
+                var e = x.endIndex;
+                if (e === 0) return true;
+                if (Multiline === false) return false;
+                if (isLineTerminator(Input[e - 1])) return true;
+                return false;
             };
             */
             return RegExpCompilerContext.tester(function(ctx) {
@@ -371,11 +371,11 @@ const RegExpFactory = (function() {
             proceed();
             /* original code
             return function(x) {
-            	var e = x.endIndex;
-            	if (e === InputLength) return true;
-            	if (Multiline === false) return false;
-            	if (isLineTerminator(Input[e])) return true;
-            	return false;
+                var e = x.endIndex;
+                if (e === InputLength) return true;
+                if (Multiline === false) return false;
+                if (isLineTerminator(Input[e])) return true;
+                return false;
             };
             */
             return RegExpCompilerContext.tester(function(ctx) {
@@ -390,12 +390,12 @@ const RegExpFactory = (function() {
             proceed(2);
             /* original code
             return function(x) {
-            	var e = x.endIndex;
-            	var a = IsWordChar(e - 1);
-            	var b = IsWordChar(e);
-            	if (a === true && b === false) return true;
-            	if (a === false && b === true) return true;
-            	return false;
+                var e = x.endIndex;
+                var a = IsWordChar(e - 1);
+                var b = IsWordChar(e);
+                if (a === true && b === false) return true;
+                if (a === false && b === true) return true;
+                return false;
             };
             */
             return RegExpCompilerContext.tester(function(ctx) {
@@ -409,12 +409,12 @@ const RegExpFactory = (function() {
             proceed(2);
             /* original code
             return function(x) {
-            	var e = x.endIndex;
-            	var a = IsWordChar(e - 1);
-            	var b = IsWordChar(e);
-            	if (a === true && b === false) return false;
-            	if (a === false && b === true) return false;
-            	return true;
+                var e = x.endIndex;
+                var a = IsWordChar(e - 1);
+                var b = IsWordChar(e);
+                if (a === true && b === false) return false;
+                if (a === false && b === true) return false;
+                return true;
             };
             */
             return RegExpCompilerContext.tester(function(ctx) {
@@ -434,13 +434,13 @@ const RegExpFactory = (function() {
             expecting(')');
             /* original code
             return function(x, c) {
-            	var r = unpending(m(x, noContinuation));
-            	if (r === failure) return failure;
-            	var y = r;
-            	var cap = y.captures;
-            	var xe = x.endIndex;
-            	var z = State(xe, cap);
-            	return pending(c, z);
+                var r = unpending(m(x, noContinuation));
+                if (r === failure) return failure;
+                var y = r;
+                var cap = y.captures;
+                var xe = x.endIndex;
+                var z = State(xe, cap);
+                return pending(c, z);
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -459,9 +459,9 @@ const RegExpFactory = (function() {
             expecting(')');
             /* original code
             return function(x, c) {
-            	var r = unpending(m(x, noContinuation));
-            	if (r !== failure) return failure;
-            	return pending(c, x);
+                var r = unpending(m(x, noContinuation));
+                if (r !== failure) return failure;
+                return pending(c, x);
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -536,8 +536,8 @@ const RegExpFactory = (function() {
             proceed();
             /* original code
             var A = function(cc) {
-            	if (isLineTerminator(cc)) return false;
-            	return true;
+                if (isLineTerminator(cc)) return false;
+                return true;
             };
             */
             var A = RegExpCompilerContext.charset(function(ctx) {
@@ -566,16 +566,16 @@ const RegExpFactory = (function() {
             expecting(')');
             /* original code
             return function(x, c) {
-            	var d = function(y) {
-            		var cap = arraycopy(y.captures);
-            		var xe = x.endIndex;
-            		var ye = y.endIndex;
-            		var s = Input.substring(xe, ye);
-            		cap[parenIndex + 1] = s;
-            		var z = State(ye, cap);
-            		return pending(c, z);
-            	};
-            	return m(x, d);
+                var d = function(y) {
+                    var cap = arraycopy(y.captures);
+                    var xe = x.endIndex;
+                    var ye = y.endIndex;
+                    var s = Input.substring(xe, ye);
+                    cap[parenIndex + 1] = s;
+                    var z = State(ye, cap);
+                    return pending(c, z);
+                };
+                return m(x, d);
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -599,7 +599,7 @@ const RegExpFactory = (function() {
         if (!IgnoreCase) var cch = ch;
         /* original code
         return function(cc) {
-        	return cch === cc;
+            return cch === cc;
         };
         */
         return RegExpCompilerContext.charset(function(ctx) {
@@ -610,17 +610,17 @@ const RegExpFactory = (function() {
     function CharacterSetMatcher(A, invert) {
         /* original code
         return function(x, c) {
-        	var e = x.endIndex;
-        	if (e === InputLength) return failure;
-        	var ch = Input[e];
-        	var cc = CanonicalizeI(ch);
-        	if (invert === false) {
-        		if (A(cc) === false) return failure;
-        	}
-        	else if (A(cc) === true) return failure;
-        	var cap = x.captures;
-        	var y = State(e + 1, cap);
-        	return pending(c, y);
+            var e = x.endIndex;
+            if (e === InputLength) return failure;
+            var ch = Input[e];
+            var cc = CanonicalizeI(ch);
+            if (invert === false) {
+                if (A(cc) === false) return failure;
+            }
+            else if (A(cc) === true) return failure;
+            var cap = x.captures;
+            var y = State(e + 1, cap);
+            return pending(c, y);
         };
         */
         return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -648,7 +648,7 @@ const RegExpFactory = (function() {
             if (n > NCapturingParens) {
                 /* original code
                 return function(x, c) {
-                	return failure;
+                    return failure;
                 };
                 */
                 return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -658,18 +658,18 @@ const RegExpFactory = (function() {
 
             /* original code
             return function(x, c) {
-            	var cap = x.captures;
-            	var s = cap[n];
-            	if (s === undefined) return pending(c, x);
-            	var e = x.endIndex;
-            	var len = s.length;
-            	var f = e + len;
-            	if (f > InputLength) return failure;
-            	for (var i = 0; i < len; i++) {
-            		if (CanonicalizeI(s[i]) !== CanonicalizeI(Input[e + i])) return failure;
-            	}
-            	var y = State(f, cap);
-            	return pending(c, y);
+                var cap = x.captures;
+                var s = cap[n];
+                if (s === undefined) return pending(c, x);
+                var e = x.endIndex;
+                var len = s.length;
+                var f = e + len;
+                if (f > InputLength) return failure;
+                for (var i = 0; i < len; i++) {
+                    if (CanonicalizeI(s[i]) !== CanonicalizeI(Input[e + i])) return failure;
+                }
+                var y = State(f, cap);
+                return pending(c, y);
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -696,7 +696,7 @@ const RegExpFactory = (function() {
         if (ch === undefined) {
             /* original code
             return function(x, c) {
-            	return failure;
+                return failure;
             };
             */
             return RegExpCompilerContext.matcher(function(ctx, c) {
@@ -792,8 +792,8 @@ const RegExpFactory = (function() {
             case 'd':
                 /* original code
                 return function(cc) {
-                	if (isDecimalDigitChar(cc)) return true;
-                	return false;
+                    if (isDecimalDigitChar(cc)) return true;
+                    return false;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -802,8 +802,8 @@ const RegExpFactory = (function() {
             case 'D':
                 /* original code
                 return function(cc) {
-                	if (isDecimalDigitChar(cc)) return false;
-                	return true;
+                    if (isDecimalDigitChar(cc)) return false;
+                    return true;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -812,8 +812,8 @@ const RegExpFactory = (function() {
             case 's':
                 /* original code
                 return function(cc) {
-                	if (isWhiteSpace(cc) || isLineTerminator(cc)) return true;
-                	return false;
+                    if (isWhiteSpace(cc) || isLineTerminator(cc)) return true;
+                    return false;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -822,8 +822,8 @@ const RegExpFactory = (function() {
             case 'S':
                 /* original code
                 return function(cc) {
-                	if (isWhiteSpace(cc) || isLineTerminator(cc)) return false;
-                	return true;
+                    if (isWhiteSpace(cc) || isLineTerminator(cc)) return false;
+                    return true;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -832,8 +832,8 @@ const RegExpFactory = (function() {
             case 'w':
                 /* original code
                 return function(cc) {
-                	if (cc === '_' || isDigitChar(cc)) return true;
-                	return false;
+                    if (cc === '_' || isDigitChar(cc)) return true;
+                    return false;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -842,8 +842,8 @@ const RegExpFactory = (function() {
             case 'W':
                 /* original code
                 return function(cc) {
-                	if (cc === '_' || isDigitChar(cc)) return false;
-                	return true;
+                    if (cc === '_' || isDigitChar(cc)) return false;
+                    return true;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -899,18 +899,18 @@ const RegExpFactory = (function() {
     function rangeCharSet(i, j) {
         /* original code
         return function(cc) {
-        	if (IgnoreCase === false) {
-        		var k = toCharCode(cc);
-        		if ((i <= k) && (k <= j)) return true;
-        		return false;
-        	}
-        	else {
-        		for (var k = i; k <= j; k++) {
-					var ch = charCode2String(k);
-        			if (Canonicalize(ch) === cc) return true;
-        		}
-        		return false;
-        	}
+            if (IgnoreCase === false) {
+                var k = toCharCode(cc);
+                if ((i <= k) && (k <= j)) return true;
+                return false;
+            }
+            else {
+                for (var k = i; k <= j; k++) {
+                    var ch = charCode2String(k);
+                    if (Canonicalize(ch) === cc) return true;
+                }
+                return false;
+            }
         };
         */
         return RegExpCompilerContext.charset(function(ctx) {
@@ -931,11 +931,11 @@ const RegExpFactory = (function() {
     function unionCharSet(charSets) {
         /* original code
         return function(cc) {
-        	for (var i = 0; i < charSets.length; i++) {
-        		var A = charSets[i];
-        		if (A(cc) === true) return true;
-        	}
-        	return false;
+            for (var i = 0; i < charSets.length; i++) {
+                var A = charSets[i];
+                if (A(cc) === true) return true;
+            }
+            return false;
         };
         */
         return RegExpCompilerContext.charset(function(ctx) {
@@ -973,7 +973,7 @@ const RegExpFactory = (function() {
             if (ch === undefined) {
                 /* original code
                 return function(cc) {
-                	return false;
+                    return false;
                 };
                 */
                 return RegExpCompilerContext.charset(function(ctx) {
@@ -1110,30 +1110,30 @@ const RegExpFactory = (function() {
 
     /* original code
     function noContinuation(x) {
-    	return x;
+        return x;
     }
     */
 
     /* original code
     function pending(c, x) {
-    	assert(x.pendingContinuation === undefined, x);
-    	if (c !== noContinuation) {
-    		x.pendingContinuation = c;
-    	}
-    	return x;
+        assert(x.pendingContinuation === undefined, x);
+        if (c !== noContinuation) {
+            x.pendingContinuation = c;
+        }
+        return x;
     }
     */
 
     /* original code
     function unpending(x) {
-    	while (true) {
-    		var c = x.pendingContinuation;
-    		if (c === undefined) {
-    			return x;
-    		}
-    		x.pendingContinuation = undefined;
-    		x = c(x);
-    	}
+        while (true) {
+            var c = x.pendingContinuation;
+            if (c === undefined) {
+                return x;
+            }
+            x.pendingContinuation = undefined;
+            x = c(x);
+        }
     }
     */
 

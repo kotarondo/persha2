@@ -342,7 +342,7 @@ function Function_readObject(istream) {
     var sourceObject = istream.readValue();
     var index = istream.readInt();
     this.Code = sourceObject.subcodes[index];
-    istream.assert(Type(this.Scope) === TYPE_Environment);
+    istream.assert(Type(this.Scope) === TYPE_EnvironmentRecord);
     istream.assert(this.Code !== undefined);
 }
 
@@ -467,7 +467,7 @@ function Arguments_readObject(istream) {
         this.ParameterMap[i] = name;
         istream.assert(name === undefined || Type(name) === TYPE_String);
     }
-    istream.assert(Type(this.ArgumentsScope) === TYPE_Environment);
+    istream.assert(Type(this.ArgumentsScope) === TYPE_EnvironmentRecord);
 }
 
 function ObjectEnvironment_walkObject(mark) {
@@ -486,7 +486,7 @@ function ObjectEnvironment_readObject(istream) {
     var envRec = this;
     this.outer = istream.readValue();
     envRec.bindings = istream.readValue();
-    istream.assert(this.outer === null || Type(this.outer) === TYPE_Environment);
+    istream.assert(this.outer === null || Type(this.outer) === TYPE_EnvironmentRecord);
     istream.assert(Type(envRec.bindings) === TYPE_Object);
 }
 
@@ -528,7 +528,7 @@ function DeclarativeEnvironment_readObject(istream) {
         attributes[N] = attr;
         values[N] = value;
     }
-    istream.assert(this.outer === null || Type(this.outer) === TYPE_Environment);
+    istream.assert(this.outer === null || Type(this.outer) === TYPE_EnvironmentRecord);
 }
 
 function SourceObject_writeObject(ostream) {
