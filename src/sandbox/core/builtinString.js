@@ -54,7 +54,7 @@ function String_fromCharCode(thisValue, argumentsList) {
     for (var i = 0; i < argumentsList.length; i++) {
         buffer.push(fromCharCode(ToUint16(argumentsList[i])));
     }
-    var S = join(buffer);
+    var S = buffer.join('');
     return S;
 }
 
@@ -299,7 +299,7 @@ function String_prototype_replace(thisValue, argumentsList) {
                     buffer.push(c);
                 }
             }
-            var newstring = join(buffer);
+            var newstring = buffer.join('');
         }
         return newstring;
     }

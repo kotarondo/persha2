@@ -20,7 +20,7 @@ while (filenames.length) {
     console.log(filename)
     var source = fs.readFileSync(filename).toString();
     var sandbox = new Sandbox();
-    sandbox.initializeVM();
+    sandbox.initializeRealm();
     var ret = sandbox.evaluateProgram(source, filename);
     if (ret.type === 'normal' && ret.value && ret.value[2] === "DONE" &&
         JSON.stringify(ret.value[0]) === JSON.stringify(ret.value[1])) {} else {

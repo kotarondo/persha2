@@ -1042,7 +1042,7 @@ const RegExpFactory = (function() {
                 buffer.push(proceed());
             }
         }
-        return join(buffer);
+        return buffer.join('');
     }
 
     function compile(P, F, dynamic) {

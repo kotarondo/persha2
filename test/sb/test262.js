@@ -3,7 +3,7 @@
 // License: "BSD-3-Clause"
 
 const stopIfFailed = false
-const skipHeavyTests = true
+const skipHeavyTests = false
 
 require('../harness')
 var Sandbox = require('../../src/sandbox/index.js')

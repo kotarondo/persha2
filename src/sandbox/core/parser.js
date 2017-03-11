@@ -1574,7 +1574,7 @@ const Parser = (function() {
             }
             buffer.push(c);
         }
-        return join(buffer);
+        return buffer.join('');
     }
 
     function readEscapedIdentifierName() {
@@ -1589,7 +1589,7 @@ const Parser = (function() {
             }
             buffer.push(c);
         }
-        return join(buffer);
+        return buffer.join('');
     }
 
     function readIdentifierPart() {

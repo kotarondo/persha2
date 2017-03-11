@@ -119,7 +119,7 @@ const JSONParser = (function() {
             if (current === undefined) throw SyntaxError();
             else if (current === '"') {
                 proceed();
-                return join(buffer);
+                return buffer.join('');
             } else if (current === '\\') {
                 var c = readJSONEscapeSequence();
                 buffer.push(c);
@@ -425,7 +425,7 @@ function JSON_stringify(thisValue, argumentsList) {
             }
         }
         product.push('"');
-        return join(product);
+        return product.join('');
     }
 
     function JO(value) {

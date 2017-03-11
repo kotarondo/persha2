@@ -293,7 +293,7 @@ function Global_escape(thisValue, argumentsList) {
     var R = [];
     var k = 0;
     while (true) {
-        if (k === Result2) return join(R);
+        if (k === Result2) return R.join('');
         var Result6 = Result1[k];
         if (!isIncluded(Result6, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@*_+-./")) {
             var x = toCharCode(Result6);
@@ -318,7 +318,7 @@ function Global_unescape(thisValue, argumentsList) {
     var R = [];
     var k = 0;
     while (true) {
-        if (k === Result2) return join(R);
+        if (k === Result2) return R.join('');
         var c = Result1[k];
         if (c === '%') {
             if ((k <= Result2 - 6) && Result1[k + 1] === 'u' && isHexDigitChar(Result1[k + 2]) &&

@@ -51,10 +51,6 @@ const failure = ({
     failure: true
 });
 
-function join(a) {
-    return a.join('');
-}
-
 function arraycopy(a) {
     var b = [];
     for (var i = 0; i < a.length; i++) {
@@ -132,7 +128,7 @@ function formatNumber(x, witdh) {
         buffer[witdh] = toDigitChar(x % 10);
         x = Math.floor(x / 10);
     }
-    return join(buffer);
+    return buffer.join('');
 }
 
 function isPrimitiveValue(x) {
