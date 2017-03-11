@@ -3,7 +3,7 @@
 // License: "BSD-3-Clause"
 
 const stopIfFailed = false
-const skipHeavyTests = true
+const skipHeavyTests = false
 
 require('../harness')
 var Sandbox = require('../../src/sandbox/index.js')
@@ -77,7 +77,7 @@ function doTest(test) {
     source = decodeURIComponent(escape(source)) // UTF-8 decoding trick
     try {
         var sandbox = new Sandbox()
-        sandbox.initializeRealm()
+        sandbox.initialize()
         var result = sandbox.evaluateProgram(sta_source, "sta.js")
         var result = sandbox.evaluateProgram(sta_patch_source, "sta_patch.js")
         var result = sandbox.evaluateProgram(source, test.path)
@@ -132,5 +132,5 @@ console.log(fails)
 console.log("pass: " + passCount)
 console.log("fail: " + failCount)
 console.log("skip: " + skipCount)
-if (failCount) process.exit(1)
+assert_equals(failCount, 0)
 test_success()

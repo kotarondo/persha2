@@ -38,7 +38,7 @@ var context = require("./optimized_context");
 function Sandbox() {
     var realm;
 
-    this.initializeRealm = function() {
+    this.initialize= function() {
         context.initializeRealm();
         realm = context.getRealm();
     }
