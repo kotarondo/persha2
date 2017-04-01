@@ -31,48 +31,67 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-function createObj(Class, arg1, arg2, arg3) {
-    switch (Class) {
-        case 'Buffer':
-            return new Buffer(arg1);
-        case 'Date':
-            return new Date(arg1);
-        case 'Error':
-            switch (arg1) {
-                case 'TypeError':
-                    var e = new TypeError(arg2);
-                    break;
-                case 'ReferenceError':
-                    var e = new ReferenceError(arg2);
-                    break;
-                case 'RangeError':
-                    var e = new RangeError(arg2);
-                    break;
-                case 'SyntaxError':
-                    var e = new SyntaxError(arg2);
-                    break;
-                default:
-                    var e = new Error(arg2);
-                    break;
-            }
-            e.stack = arg3;
-            return e;
-        case 'Array':
-            return new Array(arg1);
+function importValue(a, classofObj) {
+    if (isPrimitiveValue(a)) {
+        return a;
     }
-    return {};
+    try {
+        return importObject(a, new WeakMap(), classofObj);
+    } catch (e) {
+        return undefined;
+    }
 }
 
-function classofObj(obj) {
-    if (Array.isArray(obj)) return 'Array';
-    if (Buffer.isBuffer(obj)) return 'Buffer';
-    if (obj instanceof Date) return 'Date';
-    if (obj instanceof Error) return 'Error';
-    if (obj instanceof Function) return 'Function';
-    return 'Object';
+function importObject(a, map, classofObj) {
+    if (map.has(a)) {
+        return map.get(a);
+    }
+    switch (classofObj(a)) {
+        case 'Buffer':
+            var A = VMObject(CLASSID_Buffer);
+            A.Prototype = realm.Buffer_prototype;
+            A.Extensible = true;
+            A.wrappedBuffer = new Buffer(a);
+            defineFinal(A, 'length', a.length);
+            defineFinal(A, 'parent', A);
+            return A;
+        case 'Date':
+            return Date_Construct([Number(a.getTime())]);
+        case 'Function':
+            return undefined;
+        case 'Error':
+            var message = String(a.message);
+            switch (a.name) {
+                case 'TypeError':
+                    return TypeError_Construct([message]);
+                case 'ReferenceError':
+                    return ReferenceError_Construct([message]);
+                case 'RangeError':
+                    return RangeError_Construct([message]);
+                case 'SyntaxError':
+                    return SyntaxError_Construct([message]);
+                default:
+                    return Error_Construct([message]);
+            }
+        case 'Array':
+            var A = Array_Construct([Number(a.length)]);
+            break;
+        default:
+            var A = Object_Construct([]);
+            break;
+    }
+    map.set(a, A);
+    for (var P in a) {
+        var v = a[P];
+        if (!isPrimitiveValue(v)) {
+            try {
+                v = importObject(v, map, classofObj);
+                if (v === undefined) continue;
+            } catch (e) {
+                continue;
+            }
+        }
+        define(A, P, v);
+    }
+    return A;
 }
-
-module.exports = {
-    createObj: createObj,
-    classofObj: classofObj,
-};

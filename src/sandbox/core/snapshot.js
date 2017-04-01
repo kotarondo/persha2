@@ -117,7 +117,7 @@ function writeSnapshot(l_ostream) {
     var allObjs = [];
     allObjs.length = OBJID_BASE;
     var ostream = SnapshotOutputStream(l_ostream, allObjs);
-    ostream.writeString("v3.0");
+    ostream.writeString("v3.1");
 
     function mark(obj) {
         if (typeof obj !== "object") {
@@ -133,7 +133,7 @@ function writeSnapshot(l_ostream) {
         assert(allObjs[obj.ID] === obj, obj);
     }
 
-    for (var name in realm) {
+    for (var name in realmTemplate) {
         mark(realm[name]);
     }
 
@@ -157,11 +157,18 @@ function writeSnapshot(l_ostream) {
             obj.writeObject(ostream);
         }
     }
-    ostream.writeInt(0);
 
-    for (var name in realm) {
+    ostream.writeString("REALM");
+    for (var name in realmTemplate) {
         ostream.writeString(name);
         ostream.writeValue(realm[name]);
+    }
+    ostream.writeString("");
+
+    ostream.writeString("HANDLERS");
+    for (var name in realm.systemHandlers) {
+        ostream.writeString(name);
+        ostream.writeValue(realm.systemHandlers[name]);
     }
     ostream.writeString("");
 
@@ -181,7 +188,7 @@ function readSnapshot(l_istream) {
     allObjs.length = OBJID_BASE;
     var istream = SnapshotInputStream(l_istream, allObjs);
     var version = istream.readString();
-    if (version !== "v3.0") {
+    if (version !== "v3.1") {
         throw Error("unsupported format version: " + version);
     }
 
@@ -218,18 +225,31 @@ function readSnapshot(l_istream) {
         istream.assert(ID === i);
         obj.readObject(istream);
     }
-    istream.assert(istream.readInt() === 0);
 
+    istream.assert(istream.readString() === "REALM");
     realm = {};
     while (true) {
         var name = istream.readString();
         if (name === "") {
             break;
         }
+        istream.assert(name in realmTemplate);
         realm[name] = istream.readValue();
     }
+
+    istream.assert(istream.readString() === "HANDLERS");
+    realm.systemHandlers = Object.create(null);
+    while (true) {
+        var name = istream.readString();
+        if (name === "") {
+            break;
+        }
+        realm.systemHandlers[name] = istream.readValue();
+    }
+
     istream.assert(istream.readString() === "FINISH");
     istream.assert(checkRealm());
+    initializeExport();
 
     //cleanup
     for (var i = OBJID_BASE; i < allObjs.length; i++) {

@@ -242,6 +242,8 @@ function initializeRealm() {
     defineFinal(realm.theGlobalObject, "global", realm.theGlobalObject);
     defineFunction(realm.theGlobalObject, "setSystemProperty", 2, Global_setSystemProperty);
     defineFunction(realm.theGlobalObject, "getSystemProperty", 1, Global_getSystemProperty);
+    defineFunction(realm.theGlobalObject, "setSystemHandler", 2, Global_setSystemHandler);
+    defineFunction(realm.theGlobalObject, "removeSystemHandler", 1, Global_removeSystemHandler);
 
     defineFinal(realm.Object, "length", 1);
     defineFinal(realm.Object, "prototype", realm.Object_prototype);
@@ -562,8 +564,10 @@ function initializeRealm() {
     realm.stackDepthLimit = 400;
     realm.LocalTZA = 9 * 3600000;
     realm.LocalTZAString = "JST";
+    realm.systemHandlers = Object.create(null);
 
     assert(checkRealm());
+    initializeExport();
 }
 
 const realmTemplate = {
@@ -615,6 +619,7 @@ function checkRealm() {
         if (!realm[name]) return false;
     }
     for (var name in realm) {
+        if (name === "systemHandlers") continue;
         if (!realmTemplate[name]) return false;
     }
     return true;

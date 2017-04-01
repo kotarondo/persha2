@@ -75,25 +75,28 @@ function doTest(test) {
     console.log(test.path)
     var source = new Buffer(test.code, 'base64').toString('binary')
     source = decodeURIComponent(escape(source)) // UTF-8 decoding trick
+    var sandbox = new Sandbox()
+    sandbox.initialize()
+    sandbox.evaluateProgram(sta_source, "sta.js")
+    sandbox.evaluateProgram(sta_patch_source, "sta_patch.js")
     try {
-        var sandbox = new Sandbox()
-        sandbox.initialize()
-        var result = sandbox.evaluateProgram(sta_source, "sta.js")
-        var result = sandbox.evaluateProgram(sta_patch_source, "sta_patch.js")
         var result = sandbox.evaluateProgram(source, test.path)
-    } catch (e) {
-        console.log(e)
-        var result = {}
-    }
-    if (result.type === "normal" && test.negative === undefined) {
-        return true
-    }
-    if (result.type === "throw" && test.negative !== undefined) {
-        if (new RegExp(test.negative, "i").test(result.value)) {
+        if (test.negative === undefined) {
             return true
         }
+    } catch (e) {
+        var err = e;
+        if (test.negative !== undefined) {
+            try {
+                if (new RegExp(test.negative, "i").test(err)) {
+                    return true
+                }
+            } catch (e) {
+                var err = e;
+            }
+        }
     }
-    console.log("ERROR:", result)
+    console.log("ERROR:", err || result)
     console.log()
     console.log(test.description)
     console.log(test.path)

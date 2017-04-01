@@ -100,25 +100,3 @@ function NewSourceObject(type, params, source, strict, filename) {
     obj.ID = 0;
     return obj;
 }
-
-function evaluateProgram(text, filename) {
-    assert(typeof text === "string")
-    assert(!filename || typeof filename === "string")
-    try {
-        var prog = Parser.readCode("global", "", text, false, [], filename);
-    } catch (e) {
-        if (e instanceof Parser.SyntaxError) {
-            return CompletionValue("throw", VMSyntaxError(e.message), empty);
-        }
-        if (e instanceof Parser.ReferenceError) {
-            return CompletionValue("throw", VMReferenceError(e.message), empty);
-        }
-        throw e;
-    }
-    enterExecutionContextForGlobalCode(prog);
-    try {
-        return prog.evaluate();
-    } finally {
-        exitExecutionContext();
-    }
-}

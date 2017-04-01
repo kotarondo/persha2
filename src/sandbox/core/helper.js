@@ -33,7 +33,7 @@
 
 function assert(condition, info) {
     if (!condition) {
-        var err = new Error("NG: assertion failed:", info);
+        var err = new Error("NG: assertion failed: " + info);
         debugger;
         throw err;
     }

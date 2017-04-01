@@ -319,8 +319,8 @@ function VMObject(ClassID) {
             assert(false, ClassID);
     }
     obj.properties = Object.create(null);
-    obj.Prototype = undefined;
-    obj.Extensible = undefined;
+    obj.Prototype = null;
+    obj.Extensible = true;
     obj.ID = 0;
     obj.numProps = 0;
     return obj;

@@ -21,7 +21,7 @@
     },
     "dependencies": {},
     "devDependencies": {
-        "promise_context": ">=0.1"
+        "promise-context": ">=0.1"
     },
     "files": [
         "src/AtomicBroadcast.js",

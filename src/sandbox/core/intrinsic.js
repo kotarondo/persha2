@@ -277,6 +277,10 @@ const intrinsicFunctions = {
     Buffer_prototype_writeDoubleLE: Buffer_prototype_writeDoubleLE,
     Buffer_prototype_writeDoubleBE: Buffer_prototype_writeDoubleBE,
     Buffer_prototype_fill: Buffer_prototype_fill,
+    Global_setSystemProperty: Global_setSystemProperty,
+    Global_getSystemProperty: Global_getSystemProperty,
+    Global_setSystemHandler: Global_setSystemHandler,
+    Global_removeSystemHandler: Global_removeSystemHandler,
 };
 
 (function() {

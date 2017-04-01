@@ -31,14 +31,16 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-var ie = require("./import_export");
-//var context = require("./context");
-var context = require("./optimized_context");
+if (process.env.PERSHA2_SANDBOX_DEBUG) {
+    var context = require("./context");
+} else {
+    var context = require("./optimized_context");
+}
 
 function Sandbox() {
     var realm;
 
-    this.initialize= function() {
+    this.initialize = function() {
         context.initializeRealm();
         realm = context.getRealm();
     }
@@ -55,9 +57,7 @@ function Sandbox() {
 
     this.evaluateProgram = function(text, filename) {
         context.setRealm(realm);
-        var result = context.evaluateProgram(text, filename);
-        result.value = context.exportValue(result.value, ie.createObj);
-        return result;
+        return context.evaluateProgram(text, filename);
     }
 }
 

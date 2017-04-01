@@ -6,7 +6,7 @@
 
 require('../harness')
 global.AtomicBroadcast = require('../../src/AtomicBroadcast')
-global.PromiseContext = require('promise_context')
+global.PromiseContext = require('promise-context')
 
 global.N = 3
 global.F = 1

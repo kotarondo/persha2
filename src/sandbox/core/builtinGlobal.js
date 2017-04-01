@@ -362,3 +362,15 @@ function Global_getSystemProperty(thisValue, argumentsList) {
         return realm.LocalTZAString;
     }
 }
+
+function Global_setSystemHandler(thisValue, argumentsList) {
+    var name = ToString(argumentsList[0]);
+    var func = argumentsList[1];
+    if (IsCallable(func) === false) throw VMTypeError();
+    realm.systemHanders[name] = func;
+}
+
+function Global_removeSystemHandler(thisValue, argumentsList) {
+    var name = ToString(argumentsList[0]);
+    delete realm.systemHanders[name];
+}
