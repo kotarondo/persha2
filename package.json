@@ -17,7 +17,7 @@
         "url": "https://github.com/kotarondo/persha2/issues"
     },
     "engines": {
-        "node": ">=4.3"
+        "node": ">=6.5"
     },
     "dependencies": {},
     "devDependencies": {
