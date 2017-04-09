@@ -43,7 +43,7 @@ var index = 100;
 
 function registerName(name) {
     if (/\W/.test(name) || map[name]) {
-        var err = new Error("NG: invalid name:", name);
+        var err = new Error("NG: invalid name:" + name);
         debugger;
         throw err;
     }

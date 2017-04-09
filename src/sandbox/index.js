@@ -39,19 +39,24 @@ if (process.env.PERSHA2_SANDBOX_DEBUG) {
 
 function Sandbox() {
     var realm;
+    var stream;
 
     this.initialize = function() {
         context.initializeRealm();
         realm = context.getRealm();
     }
 
-    this.writeSnapshot = function(ostream) {
-        context.setRealm(realm);
-        context.writeSnapshot(ostream);
+    this.setStream = function(s) {
+        stream = s;
     }
 
-    this.readSnapshot = function(istream) {
-        context.readSnapshot(istream);
+    this.writeSnapshot = function() {
+        context.setRealm(realm);
+        context.writeSnapshot(stream);
+    }
+
+    this.readSnapshot = function() {
+        context.readSnapshot(stream);
         realm = context.getRealm();
     }
 
@@ -59,6 +64,20 @@ function Sandbox() {
         context.setRealm(realm);
         return context.evaluateProgram(text, filename);
     }
+
+    this.callFunction = function(name) {
+        context.setRealm(realm);
+		var args = Array.prototype.slice.call(arguments, 1);
+		var args = context.importArgumentsAndWriteToStream(args, stream);
+        return context.callFunction(name, args);
+    }
+
+    this.applyFunction = function(name, args) {
+        context.setRealm(realm);
+		var args = context.importArgumentsAndWriteToStream(args, stream);
+        return context.callFunction(name, args);
+    }
+
 }
 
 module.exports = Sandbox;

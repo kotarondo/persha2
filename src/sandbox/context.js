@@ -58,4 +58,6 @@ context.setRealm = function(realm) {
     this.realm = realm;
 };
 
+context.create_exported_object = vm.runInThisContext("(" + context.create_exported_object + ")");
+
 module.exports = context;

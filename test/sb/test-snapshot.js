@@ -50,6 +50,7 @@ sandbox1.evaluateProgram("x18=new SyntaxError('abc4')", "filename4");
 sandbox1.evaluateProgram("x19=new URIError('abc5')", "filename5");
 sandbox1.evaluateProgram("x20=new EvalError('abc6')", "filename6");
 sandbox1.evaluateProgram("x21=[{a:1,b:{c:3}},,[,7],];x21.length=4;Object.freeze(x21);x21");
+sandbox1.evaluateProgram("setSystemHandler('test', function(){return 'abc'})");
 check(sandbox1);
 
 function check(sandbox) {
@@ -75,6 +76,7 @@ function check(sandbox) {
     assert(sandbox.evaluateProgram("x18") instanceof SyntaxError);
     assert(sandbox.evaluateProgram("x19") instanceof URIError);
     assert(sandbox.evaluateProgram("x20") instanceof EvalError);
+    assert(sandbox.evaluateProgram("getSystemHandler('test')") instanceof Function);
 
     assert(sandbox.evaluateProgram("x0") === sandbox.evaluateProgram("x0"));
     assert(sandbox.evaluateProgram("x1") === sandbox.evaluateProgram("x1"));
@@ -85,6 +87,7 @@ function check(sandbox) {
     assert(sandbox.evaluateProgram("x12") === sandbox.evaluateProgram("x12"));
     assert(sandbox.evaluateProgram("x13") === sandbox.evaluateProgram("x13"));
     assert(sandbox.evaluateProgram("x21") === sandbox.evaluateProgram("x21"));
+    assert(sandbox.evaluateProgram("getSystemHandler('test')") === sandbox.evaluateProgram("getSystemHandler('test')"));
 
     assert_equals(sandbox.evaluateProgram("x0"), undefined);
     assert_equals(sandbox.evaluateProgram("x1"), null);
@@ -133,18 +136,23 @@ function check(sandbox) {
     sandbox.evaluateProgram("x21")[5] = 5;
     assert_equals(Object.keys(sandbox.evaluateProgram("x21")).join(), '0,2');
 
+    assert_equals(sandbox.evaluateProgram("getSystemHandler('test')()"), 'abc');
 }
 
 var s = new stream();
-sandbox1.writeSnapshot(s);
+sandbox1.setStream(s);
+sandbox1.writeSnapshot();
 var sandbox2 = new Sandbox();
-sandbox2.readSnapshot(s);
+sandbox2.setStream(s);
+sandbox2.readSnapshot();
 check(sandbox2);
 
 var s = new stream();
-sandbox2.writeSnapshot(s);
+sandbox2.setStream(s);
+sandbox2.writeSnapshot();
 var sandbox3 = new Sandbox();
-sandbox3.readSnapshot(s);
+sandbox3.setStream(s);
+sandbox3.readSnapshot();
 check(sandbox3);
 
 test_success()

@@ -35,7 +35,9 @@
 // ECMAScript 5.1: 15 Standard Built-in ECMAScript Objects
 
 function initializeRealm() {
-    realm = {};
+    realm = {
+        systemHandlers: Object.create(null),
+    };
 
     realm.Object_prototype = VMObject(CLASSID_Object);
     realm.Object_prototype.Prototype = null;
@@ -243,6 +245,7 @@ function initializeRealm() {
     defineFunction(realm.theGlobalObject, "setSystemProperty", 2, Global_setSystemProperty);
     defineFunction(realm.theGlobalObject, "getSystemProperty", 1, Global_getSystemProperty);
     defineFunction(realm.theGlobalObject, "setSystemHandler", 2, Global_setSystemHandler);
+    defineFunction(realm.theGlobalObject, "getSystemHandler", 1, Global_getSystemHandler);
     defineFunction(realm.theGlobalObject, "removeSystemHandler", 1, Global_removeSystemHandler);
 
     defineFinal(realm.Object, "length", 1);
@@ -564,7 +567,6 @@ function initializeRealm() {
     realm.stackDepthLimit = 400;
     realm.LocalTZA = 9 * 3600000;
     realm.LocalTZAString = "JST";
-    realm.systemHandlers = Object.create(null);
 
     assert(checkRealm());
     initializeExport();

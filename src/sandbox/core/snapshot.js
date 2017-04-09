@@ -31,60 +31,60 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-const OBJID_BASE = 10;
+const SNAPSHOT_OBJID_BASE = 10;
 
-function SnapshotOutputStream(ostream, allObjs) {
+function SnapshotOutputStream(stream, allObjs) {
     return {
         writeInt: function(x) {
-            ostream.writeInt(x);
+            stream.writeInt(x);
         },
         writeString: function(x) {
-            ostream.writeString(x);
+            stream.writeString(x);
         },
         writeBuffer: function(x) {
-            ostream.writeBuffer(x);
+            stream.writeBuffer(x);
         },
         writeValue: function(x) {
             switch (typeof x) {
                 case "undefined":
-                    ostream.writeInt(1);
+                    stream.writeInt(1);
                     return;
                 case "boolean":
-                    ostream.writeInt((x === true) ? 2 : 3);
+                    stream.writeInt((x === true) ? 2 : 3);
                     return;
                 case "number":
-                    ostream.writeInt(4);
-                    ostream.writeNumber(x);
+                    stream.writeInt(4);
+                    stream.writeNumber(x);
                     return;
                 case "string":
-                    ostream.writeInt(5);
-                    ostream.writeString(x);
+                    stream.writeInt(5);
+                    stream.writeString(x);
                     return;
             }
             if (x === null) {
-                ostream.writeInt(6);
+                stream.writeInt(6);
                 return;
             }
             assert(allObjs[x.ID] === x, x);
-            ostream.writeInt(x.ID);
+            stream.writeInt(x.ID);
         },
     };
 }
 
-function SnapshotInputStream(istream, allObjs) {
+function SnapshotInputStream(stream, allObjs) {
     return {
         readInt: function() {
-            return istream.readInt();
+            return stream.readInt();
         },
         readString: function() {
-            return istream.readString();
+            return stream.readString();
         },
         readBuffer: function() {
-            return istream.readBuffer();
+            return stream.readBuffer();
         },
         readValue: function() {
-            var ID = istream.readInt();
-            if (OBJID_BASE <= ID) {
+            var ID = stream.readInt();
+            if (SNAPSHOT_OBJID_BASE <= ID) {
                 var obj = allObjs[ID];
                 this.assert(obj !== undefined);
                 return obj;
@@ -97,27 +97,30 @@ function SnapshotInputStream(istream, allObjs) {
                 case 3:
                     return false;
                 case 4:
-                    return istream.readNumber();
+                    return stream.readNumber();
                 case 5:
-                    return istream.readString();
+                    return stream.readString();
                 case 6:
                     return null;
+                case 7:
+                    var name = stream.readString();
+                    return realm[name];
             }
             this.assert(false);
         },
         assert: function(condition) {
             if (condition !== true) {
-                throw Error("snapshot broken");
+                throw Error("object input stream broken");
             }
         },
     };
 }
 
-function writeSnapshot(l_ostream) {
+function writeSnapshot(stream) {
     var allObjs = [];
-    allObjs.length = OBJID_BASE;
-    var ostream = SnapshotOutputStream(l_ostream, allObjs);
-    ostream.writeString("v3.1");
+    allObjs.length = SNAPSHOT_OBJID_BASE;
+    var ostream = SnapshotOutputStream(stream, allObjs);
+    ostream.writeString("v3.2");
 
     function mark(obj) {
         if (typeof obj !== "object") {
@@ -136,9 +139,12 @@ function writeSnapshot(l_ostream) {
     for (var name in realmTemplate) {
         mark(realm[name]);
     }
+    for (var name in realm.systemHandlers) {
+        mark(realm.systemHandlers[name]);
+    }
 
     ostream.writeString("CLASSID");
-    for (var i = OBJID_BASE; i < allObjs.length; i++) {
+    for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
         var obj = allObjs[i];
         ostream.writeInt(obj.ClassID);
         if (obj.ClassID === CLASSID_SourceObject) {
@@ -150,10 +156,9 @@ function writeSnapshot(l_ostream) {
     ostream.writeInt(0);
 
     ostream.writeString("CONTENTS");
-    for (var i = OBJID_BASE; i < allObjs.length; i++) {
+    for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
         var obj = allObjs[i];
         if (obj.ClassID !== CLASSID_SourceObject) {
-            ostream.writeInt(obj.ID);
             obj.writeObject(ostream);
         }
     }
@@ -173,22 +178,25 @@ function writeSnapshot(l_ostream) {
     ostream.writeString("");
 
     ostream.writeString("FINISH");
-    l_ostream.flush();
+    stream.flush();
 
     //cleanup
-    for (var i = OBJID_BASE; i < allObjs.length; i++) {
+    for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
         var obj = allObjs[i];
         obj.ID = 0;
     }
 }
 
-function readSnapshot(l_istream) {
-    realm = null;
+function readSnapshot(stream) {
+    realm = {
+        systemHandlers: Object.create(null),
+    };
+
     var allObjs = [];
-    allObjs.length = OBJID_BASE;
-    var istream = SnapshotInputStream(l_istream, allObjs);
+    allObjs.length = SNAPSHOT_OBJID_BASE;
+    var istream = SnapshotInputStream(stream, allObjs);
     var version = istream.readString();
-    if (version !== "v3.1") {
+    if (version !== "v3.2") {
         throw Error("unsupported format version: " + version);
     }
 
@@ -216,18 +224,15 @@ function readSnapshot(l_istream) {
     }
 
     istream.assert(istream.readString() === "CONTENTS");
-    for (var i = OBJID_BASE; i < allObjs.length; i++) {
+    for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
         var obj = allObjs[i];
         if (obj.ClassID === CLASSID_SourceObject) {
             continue;
         }
-        var ID = istream.readInt();
-        istream.assert(ID === i);
         obj.readObject(istream);
     }
 
     istream.assert(istream.readString() === "REALM");
-    realm = {};
     while (true) {
         var name = istream.readString();
         if (name === "") {
@@ -238,7 +243,6 @@ function readSnapshot(l_istream) {
     }
 
     istream.assert(istream.readString() === "HANDLERS");
-    realm.systemHandlers = Object.create(null);
     while (true) {
         var name = istream.readString();
         if (name === "") {
@@ -252,7 +256,7 @@ function readSnapshot(l_istream) {
     initializeExport();
 
     //cleanup
-    for (var i = OBJID_BASE; i < allObjs.length; i++) {
+    for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
         var obj = allObjs[i];
         if (obj.ClassID === CLASSID_SourceObject) {
             obj.subcodes = undefined;

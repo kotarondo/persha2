@@ -52,31 +52,27 @@ function create_exported_object(Class, arg1, arg2) {
         case 'Error':
             switch (arg1) {
                 case 'TypeError':
-                    var err = new TypeError(arg2);
-                    break;
+                    return new TypeError(arg2);
                 case 'ReferenceError':
-                    var err = new ReferenceError(arg2);
-                    break;
+                    return new ReferenceError(arg2);
                 case 'RangeError':
-                    var err = new RangeError(arg2);
-                    break;
+                    return new RangeError(arg2);
                 case 'SyntaxError':
-                    var err = new SyntaxError(arg2);
-                    break;
+                    return new SyntaxError(arg2);
                 case 'URIError':
-                    var err = new URIError(arg2);
-                    break;
+                    return new URIError(arg2);
                 case 'EvalError':
-                    var err = new EvalError(arg2);
-                    break;
+                    return new EvalError(arg2);
                 case 'Error':
-                    var err = new Error(arg2);
-                    break;
-                default:
-                    var err = new Error(arg2);
-                    err.name = arg1;
-                    break;
+                    return new Error(arg2);
             }
+            var err = new Error(arg2);
+            Object.defineProperty(err, "name", {
+                value: arg1,
+                writable: true,
+                enumerable: false,
+                configurable: true,
+            });
             return err;
         case 'ObjectPrototype':
             return Object.prototype;
@@ -134,29 +130,31 @@ function exportValue(A) {
     if (isPrimitiveValue(A)) {
         return A;
     }
-    if (!A.exported) {
-        switch (A.Class) {
-            case 'Number':
-            case 'String':
-            case 'Boolean':
-            case 'Date':
-                return create_exported_object(A.Class, A.PrimitiveValue);
-            case 'Buffer':
-                return create_exported_object('Buffer', A.wrappedBuffer); // copy the buffer
-            case 'RegExp':
-                return exportRegExp(A);
-            case 'Error':
-                return exportError(A);
-            case 'Array':
-                var obj = create_exported_object('Array');
-                break;
-            default:
-                var obj = create_exported_object('Object');
-                break;
-        }
-        A.exported = new Proxy(obj, new ExportHandler(A));
+    if (A.exported) {
+        return A.exported;
     }
-    return A.exported;
+    switch (A.Class) {
+        case 'Number':
+        case 'String':
+        case 'Boolean':
+        case 'Date':
+            A.exported = create_exported_object(A.Class, A.PrimitiveValue);
+            return A.exported;
+        case 'Buffer':
+            return create_exported_object('Buffer', A.wrappedBuffer); // copy the buffer
+        case 'RegExp':
+            return exportRegExp(A);
+        case 'Error':
+            return exportError(A);
+        case 'Array':
+            var obj = create_exported_object('Array');
+            A.exported = new Proxy(obj, new ExportHandler(A));
+            return A.exported;
+        default:
+            var obj = create_exported_object('Object');
+            A.exported = new Proxy(obj, new ExportHandler(A));
+            return A.exported;
+    }
 }
 
 function exportRegExp(A) {
@@ -301,18 +299,18 @@ function safe_get_primitive_value(O, P) {
 }
 
 function evaluateProgram(text, filename) {
-    assert(typeof text === "string")
-    assert(!filename || typeof filename === "string")
+    assert(typeof text === "string");
+    assert(!filename || typeof filename === "string");
     try {
         var prog = Parser.readCode("global", "", text, false, [], filename);
     } catch (e) {
         if (e instanceof Parser.SyntaxError) {
-            throw new SyntaxError(e.message);
+            throw create_exported_object('Error', 'SyntaxError', e.message);
         }
         if (e instanceof Parser.ReferenceError) {
-            throw new ReferenceError(e.message);
+            throw create_exported_object('Error', 'ReferenceError', e.message);
         }
-        throw e;
+        throw e; // internal error
     }
     var savedLexicalEnvironment = LexicalEnvironment;
     var savedVariableEnvironment = VariableEnvironment;

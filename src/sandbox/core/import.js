@@ -31,67 +31,211 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-function importValue(a, classofObj) {
-    if (isPrimitiveValue(a)) {
-        return a;
+function classof_importing_object(a) {
+    switch (Object.prototype.toString.call(a)) {
+        case '[object Number]':
+            return 'Number';
+        case '[object String]':
+            return 'String';
+        case '[object Boolean]':
+            return 'Boolean';
+        case '[object Date]':
+            return 'Date';
+        case '[object RegExp]':
+            return 'RegExp';
+        case '[object Error]':
+            return 'Error';
+        case '[object Function]':
+            return 'Function';
+        case '[object Array]':
+            return 'Array';
     }
-    try {
-        return importObject(a, new WeakMap(), classofObj);
-    } catch (e) {
-        return undefined;
-    }
+    if (Buffer.isBuffer(a)) return 'Buffer';
 }
 
-function importObject(a, map, classofObj) {
-    if (map.has(a)) {
-        return map.get(a);
-    }
-    switch (classofObj(a)) {
-        case 'Buffer':
-            var A = VMObject(CLASSID_Buffer);
-            A.Prototype = realm.Buffer_prototype;
-            A.Extensible = true;
-            A.wrappedBuffer = new Buffer(a);
-            defineFinal(A, 'length', a.length);
-            defineFinal(A, 'parent', A);
-            return A;
+function create_imported_object(type, arg1, arg2) {
+    switch (type) {
+        case 'Number':
+            return Number_Construct([arg1]);
+        case 'String':
+            return String_Construct([arg1]);
+        case 'Boolean':
+            return Boolean_Construct([arg1]);
         case 'Date':
-            return Date_Construct([Number(a.getTime())]);
+            return Date_Construct([arg1]);
+        case 'Buffer':
+            var obj = VMObject(CLASSID_Buffer);
+            obj.Prototype = realm.Buffer_prototype;
+            obj.Extensible = true;
+            obj.wrappedBuffer = arg1;
+            defineFinal(obj, "length", arg1.length);
+            defineFinal(obj, "parent", obj);
+            return obj;
+        case 'RegExp':
+            var regexp = RegExpFactory.compile(arg1, arg2, true);
+            return RegExpFactory.createRegExpObject(regexp);
+        case 'Error':
+            switch (arg1) {
+                case 'TypeError':
+                    return TypeError_Construct([arg2]);
+                case 'ReferenceError':
+                    return ReferenceError_Construct([arg2]);
+                case 'RangeError':
+                    return RangeError_Construct([arg2]);
+                case 'SyntaxError':
+                    return SyntaxError_Construct([arg2]);
+                case 'URIError':
+                    return URIError_Construct([arg2]);
+                case 'EvalError':
+                    return EvalError_Construct([arg2]);
+                case 'Error':
+                    return Error_Construct([arg2]);
+            }
+            var err = Error_Construct([arg2]);
+            define(err, "name", arg1);
+            return err;
         case 'Function':
             return undefined;
-        case 'Error':
-            var message = String(a.message);
-            switch (a.name) {
-                case 'TypeError':
-                    return TypeError_Construct([message]);
-                case 'ReferenceError':
-                    return ReferenceError_Construct([message]);
-                case 'RangeError':
-                    return RangeError_Construct([message]);
-                case 'SyntaxError':
-                    return SyntaxError_Construct([message]);
-                default:
-                    return Error_Construct([message]);
-            }
         case 'Array':
-            var A = Array_Construct([Number(a.length)]);
+            return Array_Construct([]);
+    }
+    return Object_Construct([]);
+}
+
+const IMPORT_OBJID_BASE = 20;
+
+function importValueAndWriteToStream(a, stream, index, allObjs) {
+    if (isPrimitiveValue(a)) {
+        switch (typeof a) {
+            case "undefined":
+                stream.writeInt(1);
+                return a;
+            case "boolean":
+                stream.writeInt((a === true) ? 2 : 3);
+                return a;
+            case "number":
+                stream.writeInt(4);
+                stream.writeNumber(a);
+                return a;
+            case "string":
+                stream.writeInt(5);
+                stream.writeString(a);
+                return a;
+        }
+        if (a === null) {
+            stream.writeInt(6);
+            return a;
+        }
+    }
+    if (index.has(a)) {
+        var id = index.get(a);
+        stream.writeInt(id);
+        return allObjs[id];
+    }
+    switch (classof_importing_object(a)) {
+        case 'Number':
+            var v = Number(a.valueOf());
+            stream.writeInt(7);
+            stream.writeNumber(v);
+            var A = create_imported_object('Number', v);
+            break;
+        case 'String':
+            var v = String(a.valueOf());
+            stream.writeInt(8);
+            stream.writeString(v);
+            var A = create_imported_object('String', v);
+            break;
+        case 'Boolean':
+            var v = Boolean(a.valueOf());
+            stream.writeInt((v === true) ? 9 : 10);
+            var A = create_imported_object('Boolean', v);
+            break;
+        case 'Date':
+            var v = Number(a.getTime());
+            stream.writeInt(11);
+            stream.writeNumber(v);
+            var A = create_imported_object('Date', v);
+            break;
+        case 'Buffer':
+            stream.writeInt(12);
+            stream.writeBuffer(a);
+            var A = create_imported_object('Buffer', new Buffer(a)); // copy the buffer
+            break;
+        case 'RegExp':
+            var source = String(a.source);
+            var flags = (a.global ? "g" : "") + (a.ignoreCase ? "i" : "") + (a.multiline ? "m" : "");
+            stream.writeInt(13);
+            stream.writeString(source);
+            stream.writeString(flags);
+            var A = create_imported_object('RegExp', source, flags);
+            break;
+        case 'Error':
+            var name = String(a.name);
+            var message = String(a.message);
+            stream.writeInt(14);
+            stream.writeString(name);
+            stream.writeString(message);
+            var A = create_imported_object('Error', name, message);
+            break;
+        case 'Function':
+            stream.writeInt(15);
+            var A = create_imported_object('Function', a);
+            break;
+        case 'Array':
+            stream.writeInt(16);
+            var A = create_imported_object('Array');
+            var contents = true;
             break;
         default:
-            var A = Object_Construct([]);
+            stream.writeInt(17);
+            var A = create_imported_object('Object');
+            var contents = true;
             break;
     }
-    map.set(a, A);
-    for (var P in a) {
-        var v = a[P];
-        if (!isPrimitiveValue(v)) {
-            try {
-                v = importObject(v, map, classofObj);
-                if (v === undefined) continue;
-            } catch (e) {
-                continue;
-            }
+    index.set(a, allObjs.length);
+    allObjs.push(A);
+    if (contents) {
+        var names = Object.getOwnPropertyNames(a);
+        for (var i = 0; i < names.length; i++) {
+            var P = names[i];
+            var desc = Object.getOwnPropertyDescriptor(a, P);
+            var value = desc.value;
+            if (value === undefined) continue;
+            var flags = (desc.writable ? 1 : 0) + (desc.enumerable ? 2 : 0) + (desc.configurable ? 4 : 0);
+            stream.writeString(P);
+            stream.writeInt(flags);
+            var v = importValueAndWriteToStream(value, stream, index, allObjs);
+            intrinsic_createData(A, P, v, (flags & 1) === 1, (flags & 2) === 2, (flags & 4) === 4);
         }
-        define(A, P, v);
     }
     return A;
+}
+
+function importArgumentsAndWriteToStream(args, stream) {
+    var index = new WeakMap();
+    var allObjs = [];
+    allObjs.length = IMPORT_OBJID_BASE;
+    var argumentsList = [];
+    for (var i = 0; i < args.length; i++) {
+        argumentsList[i] = importValueAndWriteToStream(args[i], stream, index, allObjs);
+    }
+    stream.writeInt(0);
+    return argumentsList;
+}
+
+function importArgumentsFromStream(stream) {
+    //TODO
+}
+
+function callFunction(name, argumentsList) {
+    assert(typeof name === "string");
+    var F = realm.systemHandlers[name];
+    if (IsCallable(F) === false) return;
+    try {
+        var result = F.Call(undefined, argumentsList);
+    } catch (e) {
+        if (isInternalError(e)) throw e;
+        throw exportValue(e);
+    }
+    return exportValue(result);
 }

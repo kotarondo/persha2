@@ -31,6 +31,19 @@ try {
     assert_equals(e.toString(), 'SyntaxError: test.js:1:5');
 }
 
+try {
+    var b1 = sandbox.evaluateProgram("b1=new Buffer('abc')");
+    var b2 = sandbox.evaluateProgram("b2=new Buffer('def')");
+    var b3 = sandbox.evaluateProgram("b1[1]='x'; b1");
+} catch (e) {
+    assert(b1 instanceof Buffer);
+    assert(b2 instanceof Buffer);
+    assert(b3 instanceof Buffer);
+    assert_equals(b1.toString(), 'abc');
+    assert_equals(b2.toString(), 'def');
+    assert_equals(b3.toString(), 'axc');
+}
+
 function test() {
     var proto = [];
     var obj = Object.create(proto);
@@ -87,7 +100,7 @@ function test() {
     return obj;
 }
 
-var result = sandbox.evaluateProgram("(" + test + ")()", "test.js");
+var result = sandbox.evaluateProgram("(" + test + ")()");
 assert_equals(Object.getOwnPropertyNames(result).toString(), 'A,B,C');
 assert_equals(Object.keys(result).toString(), 'A,C');
 var x = [];

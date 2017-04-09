@@ -367,10 +367,15 @@ function Global_setSystemHandler(thisValue, argumentsList) {
     var name = ToString(argumentsList[0]);
     var func = argumentsList[1];
     if (IsCallable(func) === false) throw VMTypeError();
-    realm.systemHanders[name] = func;
+    realm.systemHandlers[name] = func;
+}
+
+function Global_getSystemHandler(thisValue, argumentsList) {
+    var name = ToString(argumentsList[0]);
+    return realm.systemHandlers[name];
 }
 
 function Global_removeSystemHandler(thisValue, argumentsList) {
     var name = ToString(argumentsList[0]);
-    delete realm.systemHanders[name];
+    return delete realm.systemHandlers[name];
 }
