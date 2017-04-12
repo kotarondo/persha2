@@ -79,6 +79,27 @@ const Class_Object = (function() {
     return clz;
 })();
 
+const Class_OpaqueObject = (function() {
+    var clz = setAlltheInternalMethod("Object", CLASSID_OpaqueObject);
+    clz.GetProperty = default_FastGetProperty;
+    clz.Get = default_FastGet;
+    clz.Put = default_FastPut;
+    clz.writeObject = OpaqueObject_writeObject;
+    clz.readObject = OpaqueObject_readObject;
+    return clz;
+})();
+
+const Class_OpaqueFunction = (function() {
+    var clz = setAlltheInternalMethod("Function", CLASSID_OpaqueFunction);
+    clz.GetProperty = default_FastGetProperty;
+    clz.Put = default_FastPut;
+    clz.Get = Function_Get;
+    clz.Call = OpaqueFunction_ClassCall;
+    clz.Construct = OpaqueFunction_ClassConstruct;
+    clz.HasInstance = Function_HasInstance;
+    return clz;
+})();
+
 const Class_BuiltinFunction = (function() {
     var clz = setAlltheInternalMethod("Function", CLASSID_BuiltinFunction);
     clz.GetProperty = default_FastGetProperty;
@@ -249,6 +270,14 @@ function VMObject(ClassID) {
     switch (ClassID) {
         case CLASSID_Object:
             var obj = Object.create(Class_Object);
+            break;
+        case CLASSID_OpaqueObject:
+            var obj = Object.create(Class_OpaqueObject);
+            obj.wrapped = undefined;
+            obj.opaque = undefined;
+            break;
+        case CLASSID_OpaqueFunction:
+            var obj = Object.create(Class_OpaqueFunction);
             break;
         case CLASSID_BuiltinFunction:
             var obj = Object.create(Class_BuiltinFunction);

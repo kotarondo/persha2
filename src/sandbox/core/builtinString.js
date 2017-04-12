@@ -272,15 +272,15 @@ function String_prototype_replace(thisValue, argumentsList) {
                                     i += 2;
                                 }
                             } else // implementation defined behavior
-                            if ((0 < x) && (x <= m)) {
-                                var c = args[x];
-                                if (c !== undefined) {
-                                    buffer.push(c);
+                                if ((0 < x) && (x <= m)) {
+                                    var c = args[x];
+                                    if (c !== undefined) {
+                                        buffer.push(c);
+                                    }
+                                    i++;
+                                } else {
+                                    i += 2;
                                 }
-                                i++;
-                            } else {
-                                i += 2;
-                            }
                         } else if ((1 <= x) && (x <= 9)) {
                             if (x <= m) {
                                 var c = args[x];

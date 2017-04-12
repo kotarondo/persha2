@@ -31,52 +31,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-if (process.env.PERSHA2_SANDBOX_DEBUG) {
-    var context = require("./context");
-} else {
-    var context = require("./optimized_context");
-}
-
-function Sandbox() {
-    var realm;
-
-    this.ExternalObject = context.ExternalObject;
-
-    this.initialize = function() {
-        context.initializeRealm();
-        realm = context.getRealm();
-    }
-
-    this.setCustomFunction = function(name, func) {
-        realm.customFunctions[name] = func;
-    }
-
-    this.writeSnapshot = function(stream) {
-        context.setRealm(realm);
-        context.writeSnapshot(stream);
-    }
-
-    this.readSnapshot = function(stream) {
-        context.readSnapshot(stream);
-        realm = context.getRealm();
-    }
-
-    this.evaluateProgram = function(text, filename) {
-        context.setRealm(realm);
-        return context.evaluateProgram(text, filename);
-    }
-
-    this.callSystemHandler = function(name) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return this.applySystemHandler(name, args);
-    }
-
-    this.applySystemHandler = function(name, args) {
-        context.setRealm(realm);
-        var args = context.importArguments(args);
-        return context.applySystemHandler(name, args);
-    }
-
-}
-
-module.exports = Sandbox;
+module.exports = {
+    Sandbox: require("./src/sandbox"),
+    AtomicBroadcast: require("./src/AtomicBroadcast.js"),
+};

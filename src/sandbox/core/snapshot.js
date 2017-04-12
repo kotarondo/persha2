@@ -178,7 +178,6 @@ function writeSnapshot(stream) {
     ostream.writeString("");
 
     ostream.writeString("FINISH");
-    stream.flush();
 
     //cleanup
     for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
@@ -252,8 +251,7 @@ function readSnapshot(stream) {
     }
 
     istream.assert(istream.readString() === "FINISH");
-    istream.assert(checkRealm());
-    initializeExport();
+    initializeDefaultExport();
 
     //cleanup
     for (var i = SNAPSHOT_OBJID_BASE; i < allObjs.length; i++) {
@@ -584,4 +582,16 @@ function Buffer_writeObject(ostream) {
 function Buffer_readObject(istream) {
     intrinsic_readObject(this, istream);
     this.wrappedBuffer = istream.readBuffer();
+}
+
+function OpaqueObject_writeObject(ostream) {
+    intrinsic_writeObject(this, ostream);
+    this.naked;
+    var opaque = this.opaque;
+    //TODO serialize opaque
+}
+
+function OpaqueObject_readObject(istream) {
+    intrinsic_readObject(this, istream);
+    //TODO deserialize opaque
 }

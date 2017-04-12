@@ -37,6 +37,7 @@
 function initializeRealm() {
     realm = {
         systemHandlers: Object.create(null),
+        customFunctions: Object.create(null),
     };
 
     realm.Object_prototype = VMObject(CLASSID_Object);
@@ -564,12 +565,21 @@ function initializeRealm() {
     defineFunction(realm.Buffer_prototype, "writeDoubleBE", 3, Buffer_prototype_writeDoubleBE);
     defineFunction(realm.Buffer_prototype, "fill", 3, Buffer_prototype_fill);
 
+    realm.OpaqueFunction = VMObject(CLASSID_BuiltinFunction);
+    defineCall(realm.OpaqueFunction, OpaqueFunction_Call);
+    defineConstruct(realm.OpaqueFunction, OpaqueFunction_Construct);
+    realm.OpaqueFunction.Prototype = realm.Function_prototype;
+    realm.OpaqueFunction.Extensible = true;
+    define(realm.theGlobalObject, "OpaqueFunction", realm.OpaqueFunction);
+
+    defineFinal(realm.OpaqueFunction, "length", 3);
+    defineFinal(realm.OpaqueFunction, "prototype", realm.Function_prototype);
+
     realm.stackDepthLimit = 400;
     realm.LocalTZA = 9 * 3600000;
     realm.LocalTZAString = "JST";
 
-    assert(checkRealm());
-    initializeExport();
+    initializeDefaultExport();
 }
 
 const realmTemplate = {
@@ -611,18 +621,8 @@ const realmTemplate = {
     theThrowTypeError: 1,
     Buffer_prototype: 1,
     Buffer: 1,
+    OpaqueFunction: 1,
     stackDepthLimit: 1,
     LocalTZA: 1,
     LocalTZAString: 1,
 };
-
-function checkRealm() {
-    for (var name in realmTemplate) {
-        if (!realm[name]) return false;
-    }
-    for (var name in realm) {
-        if (name === "systemHandlers") continue;
-        if (!realmTemplate[name]) return false;
-    }
-    return true;
-}

@@ -7,7 +7,8 @@ var Sandbox = require('../../src/sandbox/index.js')
 
 var sandbox = new Sandbox();
 sandbox.initialize();
-sandbox.evaluateProgram("setSystemHandler('echo', function(x){return x})");
+sandbox.setCustomFunction('echo', function(x) { return x });
+sandbox.evaluateProgram("setSystemHandler('echo', new OpaqueFunction('echo'))");
 
 var x0 = sandbox.callSystemHandler('echo', undefined);
 var x1 = sandbox.callSystemHandler('echo', null);

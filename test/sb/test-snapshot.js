@@ -24,8 +24,6 @@ stream.prototype.writeInt =
         this.buffer.push(x);
     }
 
-stream.prototype.flush = function() {}
-
 var sandbox1 = new Sandbox();
 sandbox1.initialize();
 sandbox1.evaluateProgram("x0=undefined");
@@ -140,19 +138,15 @@ function check(sandbox) {
 }
 
 var s = new stream();
-sandbox1.setStream(s);
-sandbox1.writeSnapshot();
+sandbox1.writeSnapshot(s);
 var sandbox2 = new Sandbox();
-sandbox2.setStream(s);
-sandbox2.readSnapshot();
+sandbox2.readSnapshot(s);
 check(sandbox2);
 
 var s = new stream();
-sandbox2.setStream(s);
-sandbox2.writeSnapshot();
+sandbox2.writeSnapshot(s);
 var sandbox3 = new Sandbox();
-sandbox3.setStream(s);
-sandbox3.readSnapshot();
+sandbox3.readSnapshot(s);
 check(sandbox3);
 
 test_success()

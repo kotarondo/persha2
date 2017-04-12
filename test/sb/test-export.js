@@ -72,9 +72,7 @@ function test() {
         configurable: true,
     });
     Object.defineProperty(obj, "C", {
-        get: function() {
-            return "C"
-        },
+        get: function() { return "C" },
         enumerable: true,
         configurable: true,
     });
@@ -91,9 +89,7 @@ function test() {
         configurable: true,
     });
     Object.defineProperty(proto, "F", {
-        get: function() {
-            return "F"
-        },
+        get: function() { return "F" },
         enumerable: true,
         configurable: true,
     });

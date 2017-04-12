@@ -104,11 +104,20 @@ function create_exported_object(Class, arg1, arg2) {
             return TypeError.prototype;
         case 'URIErrorPrototype':
             return URIError.prototype;
+        case 'OpaqueObject':
+            var obj = new Object();
+            Object.defineProperty(obj, "opaque", {
+                value: arg1,
+                writable: false,
+                enumerable: false,
+                configurable: true,
+            });
+            return obj;
     }
     assert(false, Class);
 }
 
-function initializeExport() {
+function initializeDefaultExport() {
     realm.Object_prototype.exported = create_exported_object('ObjectPrototype');
     realm.Array_prototype.exported = create_exported_object('ArrayPrototype');
     realm.Function_prototype.exported = create_exported_object('FunctionPrototype');
@@ -124,6 +133,14 @@ function initializeExport() {
     realm.SyntaxError_prototype.exported = create_exported_object('SyntaxErrorPrototype');
     realm.TypeError_prototype.exported = create_exported_object('TypeErrorPrototype');
     realm.URIError_prototype.exported = create_exported_object('URIErrorPrototype');
+}
+
+function exportArguments(argumentsList) {
+    var args = [];
+    for (var i = 0; i < argumentsList.length; i++) {
+        args[i] = exportValue(argumentsList[i]);
+    }
+    return args;
 }
 
 function exportValue(A) {
@@ -151,10 +168,22 @@ function exportValue(A) {
             A.exported = new Proxy(obj, new ExportHandler(A));
             return A.exported;
         default:
+            if (A.ClassID === CLASSID_OpaqueObject) {
+                A.exported = exportOpaqueObject(A);
+                return A.exported;
+            }
             var obj = create_exported_object('Object');
             A.exported = new Proxy(obj, new ExportHandler(A));
             return A.exported;
     }
+}
+
+function exportOpaqueObject(A) {
+    if (A.wrapped) {
+        var obj = create_exported_object('OpaqueObject', A.opaque);
+        return new Proxy(obj, new ExportHandler(A));
+    }
+    return A.opaque;
 }
 
 function exportRegExp(A) {
@@ -270,7 +299,7 @@ ExportHandler.prototype = {
         return false;
     },
     ownKeys: function(target) {
-        return Object.keys(this.A.properties);
+        return Object.getOwnPropertyNames(this.A.properties);
     },
     apply: function(target) {
         assert(false);
@@ -310,7 +339,7 @@ function evaluateProgram(text, filename) {
         if (e instanceof Parser.ReferenceError) {
             throw create_exported_object('Error', 'ReferenceError', e.message);
         }
-        throw e; // internal error
+        throw e;
     }
     var savedLexicalEnvironment = LexicalEnvironment;
     var savedVariableEnvironment = VariableEnvironment;
@@ -328,4 +357,17 @@ function evaluateProgram(text, filename) {
     if (result.type === "normal") return exportValue(result.value);
     assert(result.type === "throw", result);
     throw exportValue(result.value);
+}
+
+function applySystemHandler(name, argumentsList) {
+    assert(typeof name === "string");
+    var F = realm.systemHandlers[name];
+    if (IsCallable(F) === false) return;
+    try {
+        var result = F.Call(null, argumentsList);
+    } catch (e) {
+        if (isInternalError(e)) throw e;
+        throw exportValue(e);
+    }
+    return exportValue(result);
 }

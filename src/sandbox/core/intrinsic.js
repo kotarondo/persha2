@@ -282,6 +282,8 @@ const intrinsicFunctions = {
     Global_setSystemHandler,
     Global_getSystemHandler,
     Global_removeSystemHandler,
+    OpaqueFunction_Call,
+    OpaqueFunction_Construct,
 };
 
 (function() {

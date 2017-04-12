@@ -321,6 +321,7 @@ function Date_Construct(argumentsList) {
 function Date_parse(thisValue, argumentsList) {
     var string = argumentsList[0];
     var s = ToString(string);
+    // non-deterministic hereafter
     return Date.parse(s); // TODO for deterministic behavior
 }
 
@@ -368,6 +369,7 @@ function Date_UTC(thisValue, argumentsList) {
 }
 
 function Date_now(thisValue, argumentsList) {
+    // non-deterministic hereafter
     return Date.now(); // TODO for deterministic behavior
 }
 

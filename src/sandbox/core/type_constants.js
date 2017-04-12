@@ -60,3 +60,5 @@ const CLASSID_DeclarativeEnvironment = 17;
 const CLASSID_ObjectEnvironment = 18;
 const CLASSID_SourceObject = 19; // pseudo class
 const CLASSID_Buffer = 20;
+const CLASSID_OpaqueFunction = 21;
+const CLASSID_OpaqueObject = 22;

@@ -2,8 +2,8 @@
 // All rights reserved.
 // License: "BSD-3-Clause"
 
-const stopIfFailed = false
-const skipHeavyTests = false
+const stopIfFailed = process.env.STOP_IF_FAILED
+const skipHeavyTests = process.env.SKIP_HEAVY_TESTS
 
 require('../harness')
 var Sandbox = require('../../src/sandbox/index.js')
