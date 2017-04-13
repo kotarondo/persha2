@@ -39,29 +39,34 @@ if (process.env.PERSHA2_SANDBOX_DEBUG) {
 
 function Sandbox() {
     var realm;
-
-    this.ExternalObject = context.ExternalObject;
+    var customFunctions = Object.create(null);
 
     this.initialize = function() {
+        context.setCustomFunctions(null);
+        context.setRealm(null);
         context.initializeRealm();
         realm = context.getRealm();
     }
 
     this.setCustomFunction = function(name, func) {
-        realm.customFunctions[name] = func;
+        customFunctions[name] = func;
     }
 
     this.writeSnapshot = function(stream) {
+        context.setCustomFunctions(customFunctions);
         context.setRealm(realm);
         context.writeSnapshot(stream);
     }
 
     this.readSnapshot = function(stream) {
+        context.setCustomFunctions(customFunctions);
+        context.setRealm(null);
         context.readSnapshot(stream);
         realm = context.getRealm();
     }
 
     this.evaluateProgram = function(text, filename) {
+        context.setCustomFunctions(customFunctions);
         context.setRealm(realm);
         return context.evaluateProgram(text, filename);
     }
@@ -72,11 +77,14 @@ function Sandbox() {
     }
 
     this.applySystemHandler = function(name, args) {
+        context.setCustomFunctions(customFunctions);
         context.setRealm(realm);
         var args = context.importArguments(args);
         return context.applySystemHandler(name, args);
     }
 
 }
+
+Sandbox.ExternalObject = context.ExternalObject;
 
 module.exports = Sandbox;

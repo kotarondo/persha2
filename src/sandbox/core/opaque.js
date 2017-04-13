@@ -55,7 +55,7 @@ function OpaqueFunction_ClassCall(thisValue, argumentsList) {
     var F = this;
     var name = ToString(F.Get("name"));
     // non-deterministic hereafter
-    var f = realm.customFunctions[name];
+    var f = customFunctions[name];
     if (!f) {
         // TODO deterministic
         return;

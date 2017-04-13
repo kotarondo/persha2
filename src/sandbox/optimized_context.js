@@ -107,7 +107,4 @@ for (var name of constants) {
     context[name] = vm.runInThisContext(map[name]);
 }
 
-context.getRealm = vm.runInThisContext("(function(){return " + map.realm + "})");
-context.setRealm = vm.runInThisContext("(function(realm){" + map.realm + "=realm})");
-
 module.exports = context;

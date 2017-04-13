@@ -341,8 +341,6 @@ function BuiltinFunction_readObject(istream) {
     intrinsic_readObject(this, istream);
     this.Call = getIntrinsicFunction(istream.readString());
     this.Construct = getIntrinsicFunction(istream.readString());
-    istream.assert(this.Call !== null);
-    istream.assert(this.Construct !== null);
 }
 
 function Function_walkObject(mark) {

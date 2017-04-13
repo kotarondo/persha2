@@ -37,7 +37,6 @@
 function initializeRealm() {
     realm = {
         systemHandlers: Object.create(null),
-        customFunctions: Object.create(null),
     };
 
     realm.Object_prototype = VMObject(CLASSID_Object);
@@ -575,6 +574,24 @@ function initializeRealm() {
     defineFinal(realm.OpaqueFunction, "length", 3);
     defineFinal(realm.OpaqueFunction, "prototype", realm.Function_prototype);
 
+    defineFinal(realm.Object, "name", "Object");
+    defineFinal(realm.Function, "name", "Function");
+    defineFinal(realm.Array, "name", "Array");
+    defineFinal(realm.String, "name", "String");
+    defineFinal(realm.Boolean, "name", "Boolean");
+    defineFinal(realm.Number, "name", "Number");
+    defineFinal(realm.Date, "name", "Date");
+    defineFinal(realm.RegExp, "name", "RegExp");
+    defineFinal(realm.Error, "name", "Error");
+    defineFinal(realm.EvalError, "name", "EvalError");
+    defineFinal(realm.RangeError, "name", "RangeError");
+    defineFinal(realm.ReferenceError, "name", "ReferenceError");
+    defineFinal(realm.SyntaxError, "name", "SyntaxError");
+    defineFinal(realm.TypeError, "name", "TypeError");
+    defineFinal(realm.URIError, "name", "URIError");
+    defineFinal(realm.Buffer, "name", "Buffer");
+    defineFinal(realm.OpaqueFunction, "name", "OpaqueFunction");
+
     realm.stackDepthLimit = 400;
     realm.LocalTZA = 9 * 3600000;
     realm.LocalTZAString = "JST";
@@ -626,3 +643,18 @@ const realmTemplate = {
     LocalTZA: 1,
     LocalTZAString: 1,
 };
+
+var realm;
+var customFunctions;
+
+function getRealm() {
+    return realm;
+}
+
+function setRealm(r) {
+    realm = r;
+}
+
+function setCustomFunctions(cf) {
+    customFunctions = cf;
+}

@@ -997,6 +997,7 @@ function defineFunction(obj, name, length, func) {
     F.Extensible = true;
     defineCall(F, func);
     defineFinal(F, "length", length);
+    defineFinal(F, "name", name);
     define(obj, name, F);
     return F;
 }
@@ -1008,6 +1009,7 @@ function defineAccessor(obj, name, get, set) {
         Get.Extensible = true;
         defineCall(Get, get);
         defineFinal(Get, "length", 0);
+        defineFinal(Get, "name", "get " + name);
     }
     if (set !== undefined) {
         var Set = VMObject(CLASSID_BuiltinFunction);
@@ -1015,6 +1017,7 @@ function defineAccessor(obj, name, get, set) {
         Set.Extensible = true;
         defineCall(Set, set);
         defineFinal(Set, "length", 1);
+        defineFinal(Set, "name", "set " + name);
     }
     intrinsic_createAccessor(obj, name, Get, Set, false, true);
 }

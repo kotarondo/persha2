@@ -63,7 +63,7 @@ function test3(a, b) {
 }
 
 sandbox.evaluateProgram("setSystemHandler('register', function(name, f){this[name]=f})");
-sandbox.callSystemHandler('register', 'test3', new sandbox.ExternalObject(test3));
+sandbox.callSystemHandler('register', 'test3', new Sandbox.ExternalObject(test3));
 sandbox.setCustomFunction('apply', apply);
 sandbox.evaluateProgram("var apply = new OpaqueFunction('apply')");
 var x3 = sandbox.evaluateProgram("apply(test3, [3, 'c'])");

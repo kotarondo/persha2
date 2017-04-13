@@ -194,7 +194,6 @@ function NewObjectEnvironment(O, E) {
     return obj;
 }
 
-var realm;
 var LexicalEnvironment;
 var VariableEnvironment;
 var ThisBinding;

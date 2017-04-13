@@ -50,14 +50,6 @@ for (var filename of filenames) {
     });
 }
 
-context.getRealm = function() {
-    return this.realm;
-};
-
-context.setRealm = function(realm) {
-    this.realm = realm;
-};
-
 context.create_exported_object = vm.runInThisContext("(" + context.create_exported_object + ")");
 
 module.exports = context;
