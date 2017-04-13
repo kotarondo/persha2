@@ -1,6 +1,6 @@
 {
     "name": "persha2",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Persistent and Highly Available JavaScript Engine",
     "author": "Kotaro Endo <kotarondo@gmail.com>",
     "license": "BSD-3-Clause",
@@ -17,7 +17,7 @@
         "url": "https://github.com/kotarondo/persha2/issues"
     },
     "engines": {
-        "node": ">=6.5"
+        "node": ">=4.3"
     },
     "dependencies": {},
     "devDependencies": {
@@ -25,9 +25,7 @@
     },
     "files": [
         "src/AtomicBroadcast.js",
-        "src/ConsensusState.js",
-        "src/sandbox",
-        "index.js"
+        "src/ConsensusState.js"
     ],
     "scripts": {
         "test": "./test/run-tests.sh"
